@@ -69,6 +69,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                                 displayName: firebaseUser.displayName || '',
                                 role: 'club_leader',
                                 status: firebaseUser.emailVerified ? 'email_verified' : 'pending',
+                                phoneNumber: '',
+                                expectedGraduationYear: undefined,
+                                expectedGraduationMonth: '',
                                 createdAt: new Date(),
                                 updatedAt: new Date(),
                             };
@@ -98,6 +101,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             displayName: firebaseUser.displayName || '',
             role: 'club_leader',
             status: firebaseUser.emailVerified ? 'email_verified' : 'pending',
+            phoneNumber: '',
+            expectedGraduationYear: undefined,
+            expectedGraduationMonth: '',
             createdAt: new Date(),
             updatedAt: new Date(),
         };
@@ -137,6 +143,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 clubInchargeFaculty: userData?.clubInchargeFaculty || '',
                 yearOfStudy: userData?.yearOfStudy || '',
                 letterOfProof: userData?.letterOfProof || '',
+                phoneNumber: userData?.phoneNumber || '',
+                expectedGraduationYear: userData?.expectedGraduationYear || null,
+                expectedGraduationMonth: userData?.expectedGraduationMonth || '',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
             };
@@ -183,6 +192,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         clubInchargeFaculty: '',
                         yearOfStudy: '',
                         letterOfProof: '',
+                        phoneNumber: '',
+                        expectedGraduationYear: null,
+                        expectedGraduationMonth: '',
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp(),
                     };

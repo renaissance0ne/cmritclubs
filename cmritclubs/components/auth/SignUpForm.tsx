@@ -3,23 +3,39 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import { useUploadThing } from '@/lib/uploadthing';
 
 export const SignUpForm: React.FC = () => {
     const [fullName, setFullName] = useState('');
     const [email, setEmail] = useState('');
     const [rollNo, setRollNo] = useState('');
+    const [phoneNumber, setPhoneNumber] = useState('');
     const [letterOfProof, setLetterOfProof] = useState<File | null>(null);
     const [department, setDepartment] = useState('');
     const [clubName, setClubName] = useState('');
     const [clubInchargeFaculty, setClubInchargeFaculty] = useState('');
     const [yearOfStudy, setYearOfStudy] = useState('');
+    const [expectedGraduationYear, setExpectedGraduationYear] = useState('');
+    const [expectedGraduationMonth, setExpectedGraduationMonth] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const { signUp, signInWithGoogle } = useAuth();
     const router = useRouter();
+
+    // Use UploadThing hook
+    const { startUpload, isUploading } = useUploadThing("media", {
+        onClientUploadComplete: (res) => {
+            console.log("Files uploaded successfully:", res);
+        },
+        onUploadError: (error) => {
+            console.error("Upload error:", error);
+            setError("Failed to upload file: " + error.message);
+        },
+    });
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -54,6 +70,14 @@ export const SignUpForm: React.FC = () => {
                 throw new Error('Roll number is required');
             }
 
+            if (!phoneNumber.trim()) {
+                throw new Error('Phone number is required');
+            }
+
+            if (!/^\+?[\d\s-()]{10,}$/.test(phoneNumber.trim())) {
+                throw new Error('Please enter a valid phone number');
+            }
+
             if (!department.trim()) {
                 throw new Error('Department is required');
             }
@@ -70,19 +94,50 @@ export const SignUpForm: React.FC = () => {
                 throw new Error('Year of study is required');
             }
 
+            if (!expectedGraduationYear) {
+                throw new Error('Expected graduation year is required');
+            }
+
+            if (!expectedGraduationMonth) {
+                throw new Error('Expected graduation month is required');
+            }
+
             if (!letterOfProof) {
                 throw new Error('Letter of proof is required');
             }
+
+            // Upload file to UploadThing
+            setUploading(true);
+            const uploadResult = await startUpload([letterOfProof]);
+            
+            if (!uploadResult || uploadResult.length === 0) {
+                throw new Error('Failed to upload file');
+            }
+
+            const letterOfProofUrl = uploadResult[0].url;
+            setUploading(false);
 
             const userData = {
                 displayName: fullName.trim(),
                 email: email.trim(),
                 rollNo: rollNo.trim(),
+                phoneNumber: phoneNumber.trim(),
                 department: department.trim(),
                 clubName: clubName.trim(),
                 clubInchargeFaculty: clubInchargeFaculty.trim(),
                 yearOfStudy: yearOfStudy,
-                letterOfProof: letterOfProof.name
+                expectedGraduationYear: parseInt(expectedGraduationYear),
+                expectedGraduationMonth: expectedGraduationMonth,
+                letterOfProof: letterOfProofUrl,
+                approvals: {
+                    director: 'pending',
+                    cseHod: 'pending',
+                    csmHod: 'pending',
+                    csdHod: 'pending',
+                    cscHod: 'pending',
+                    eceHod: 'pending'
+                },
+                overallStatus: 'pending'
             };
 
             await signUp(email, password, userData);
@@ -97,6 +152,7 @@ export const SignUpForm: React.FC = () => {
             }
         } finally {
             setLoading(false);
+            setUploading(false);
         }
     };
 
@@ -113,6 +169,13 @@ export const SignUpForm: React.FC = () => {
         }
     };
 
+    const currentYear = new Date().getFullYear();
+    const graduationYears = Array.from({ length: 10 }, (_, i) => currentYear + i);
+    const months = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
     if (success) {
         return (
             <div className="max-w-md mx-auto mt-8 p-6 bg-white rounded-lg shadow-md">
@@ -127,7 +190,7 @@ export const SignUpForm: React.FC = () => {
                         A verification link has been sent to your college email address <strong>{email}</strong>. Please click the link in the email to verify your account.
                     </p>
                     <p className="text-xs text-gray-500 mb-4">
-                        After verification, you'll be able to submit your club application.
+                        After verification, your application will be submitted for approval.
                     </p>
                     <button
                         onClick={() => router.push('/signin')}
@@ -150,7 +213,7 @@ export const SignUpForm: React.FC = () => {
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
                 <div>
                     <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
                         Full Name
@@ -200,6 +263,21 @@ export const SignUpForm: React.FC = () => {
                 </div>
 
                 <div>
+                    <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
+                        Phone Number
+                    </label>
+                    <input
+                        type="tel"
+                        id="phoneNumber"
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
+                        required
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
+                        placeholder="+91 98765 43210"
+                    />
+                </div>
+
+                <div>
                     <label htmlFor="department" className="block text-sm font-medium text-gray-700">
                         Department
                     </label>
@@ -231,6 +309,43 @@ export const SignUpForm: React.FC = () => {
                         <option value="3">3rd Year</option>
                         <option value="4">4th Year</option>
                     </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label htmlFor="expectedGraduationYear" className="block text-sm font-medium text-gray-700">
+                            Expected Graduation Year
+                        </label>
+                        <select
+                            id="expectedGraduationYear"
+                            value={expectedGraduationYear}
+                            onChange={(e) => setExpectedGraduationYear(e.target.value)}
+                            required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        >
+                            <option value="">Year</option>
+                            {graduationYears.map(year => (
+                                <option key={year} value={year}>{year}</option>
+                            ))}
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="expectedGraduationMonth" className="block text-sm font-medium text-gray-700">
+                            Expected Graduation Month
+                        </label>
+                        <select
+                            id="expectedGraduationMonth"
+                            value={expectedGraduationMonth}
+                            onChange={(e) => setExpectedGraduationMonth(e.target.value)}
+                            required
+                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
+                        >
+                            <option value="">Month</option>
+                            {months.map(month => (
+                                <option key={month} value={month}>{month}</option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <div>
@@ -265,18 +380,18 @@ export const SignUpForm: React.FC = () => {
 
                 <div>
                     <label htmlFor="letterOfProof" className="block text-sm font-medium text-gray-700">
-                        Letter of Proof (Picture)
+                        Letter of Proof (Image or PDF)
                     </label>
                     <input
                         type="file"
                         id="letterOfProof"
                         onChange={handleFileChange}
-                        accept="image/*"
+                        accept="image/*,.pdf"
                         required
                         className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                        Upload a picture of your proof document
+                        Upload a picture or PDF of your proof document
                     </p>
                 </div>
 
@@ -311,10 +426,10 @@ export const SignUpForm: React.FC = () => {
 
                 <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || uploading || isUploading}
                     className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
                 >
-                    {loading ? 'Creating Account...' : 'Create Account'}
+                    {uploading || isUploading ? 'Uploading File...' : loading ? 'Creating Account...' : 'Create Account'}
                 </button>
             </form>
 
