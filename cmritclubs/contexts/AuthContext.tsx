@@ -46,7 +46,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                         const newUser: User = {
                             uid: firebaseUser.uid,
                             email: firebaseUser.email!,
-                            displayName: firebaseUser.displayName || undefined,
+                            displayName: firebaseUser.displayName || '',
                             role: 'club_leader', // Default role
                             status: firebaseUser.emailVerified ? 'email_verified' : 'email_verified',
                             createdAt: new Date(),
@@ -74,29 +74,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return unsubscribe;
     }, []);
 
-    const signUp = async (email: string, password: string) => {
+    const signUp = async (email: string, password: string, userData?: any) => {
         try {
             const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
 
             // Send email verification
             await firebaseSendEmailVerification(firebaseUser);
 
-            // Create user document in Firestore
-            const newUser: User = {
+            // Create user document in Firestore with additional fields
+            const newUser = {
                 uid: firebaseUser.uid,
                 email: firebaseUser.email!,
-                displayName: firebaseUser.displayName || undefined,
+                displayName: userData?.displayName || firebaseUser.displayName || '',
                 role: 'club_leader',
-                status: 'email_verified', // Will be updated after email verification
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            };
-
-            await setDoc(doc(db, 'users', firebaseUser.uid), {
-                ...newUser,
+                status: 'email_verified',
+                // Additional fields from form
+                rollNo: userData?.rollNo || '',
+                department: userData?.department || '',
+                clubName: userData?.clubName || '',
+                clubInchargeFaculty: userData?.clubInchargeFaculty || '',
+                yearOfStudy: userData?.yearOfStudy || '',
+                letterOfProof: userData?.letterOfProof || '',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-            });
+            };
+
+            await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
 
         } catch (error) {
             console.error('Error signing up:', error);
@@ -126,21 +129,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             // Check if user document exists, create if not
             const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
             if (!userDoc.exists()) {
-                const newUser: User = {
+                const newUser = {
                     uid: firebaseUser.uid,
                     email: firebaseUser.email!,
-                    displayName: firebaseUser.displayName || undefined,
+                    displayName: firebaseUser.displayName || '',
                     role: 'club_leader',
                     status: 'email_verified',
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                };
-
-                await setDoc(doc(db, 'users', firebaseUser.uid), {
-                    ...newUser,
+                    // Initialize additional fields as empty for Google sign-up
+                    rollNo: '',
+                    department: '',
+                    clubName: '',
+                    clubInchargeFaculty: '',
+                    yearOfStudy: '',
+                    letterOfProof: '',
                     createdAt: serverTimestamp(),
                     updatedAt: serverTimestamp(),
-                });
+                };
+
+                await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
             }
         } catch (error) {
             console.error('Error signing in with Google:', error);

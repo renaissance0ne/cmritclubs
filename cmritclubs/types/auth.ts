@@ -1,22 +1,27 @@
-// types/auth.ts
+import { User as FirebaseUser } from 'firebase/auth';
+
 export interface User {
     uid: string;
     email: string;
     displayName?: string;
-    role: 'club_leader' | 'college_official';
-    status: 'email_verified' | 'pending_review' | 'approved' | 'rejected';
+    role: 'club_leader' | 'admin' | 'college_official';
+    status: 'pending' | 'email_verified' | 'approved' | 'rejected';
+    // New fields
+    rollNo?: string;
+    department?: string;
+    clubName?: string;
+    clubInchargeFaculty?: string;
+    yearOfStudy?: string;
+    letterOfProof?: string;
     createdAt: Date;
     updatedAt: Date;
-    rollNo?: string;
-    clubName?: string;
-    clubType?: 'organizational' | 'independent';
 }
 
 export interface AuthContextType {
     user: User | null;
-    firebaseUser: import('firebase/auth').User | null;
+    firebaseUser: FirebaseUser | null;
     loading: boolean;
-    signUp: (email: string, password: string) => Promise<void>;
+    signUp: (email: string, password: string, userData?: any) => Promise<void>;
     signIn: (email: string, password: string) => Promise<void>;
     signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
