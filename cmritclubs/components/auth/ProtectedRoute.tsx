@@ -52,7 +52,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                     case 'email_verified':
                         router.push('/application');
                         break;
-                    case 'pending_review':
+                    case 'pending':
                         router.push('/pending-approval');
                         break;
                     case 'rejected':

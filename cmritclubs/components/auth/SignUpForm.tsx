@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 export const SignUpForm: React.FC = () => {
     const [fullName, setFullName] = useState('');
@@ -18,6 +19,7 @@ export const SignUpForm: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
     const { signUp, signInWithGoogle } = useAuth();
+    const router = useRouter();
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -28,61 +30,50 @@ export const SignUpForm: React.FC = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
-
-        if (password !== confirmPassword) {
-            setError('Passwords do not match');
-            return;
-        }
-
-        if (password.length < 6) {
-            setError('Password must be at least 6 characters');
-            return;
-        }
-
-        // Basic college email validation
-        if (!email.includes('.edu') && !email.includes('college')) {
-            setError('Please use your official college email address');
-            return;
-        }
-
-        if (!fullName.trim()) {
-            setError('Full name is required');
-            return;
-        }
-
-        if (!rollNo.trim()) {
-            setError('Roll number is required');
-            return;
-        }
-
-        if (!department.trim()) {
-            setError('Department is required');
-            return;
-        }
-
-        if (!clubName.trim()) {
-            setError('Club name is required');
-            return;
-        }
-
-        if (!clubInchargeFaculty.trim()) {
-            setError('Club incharge faculty name is required');
-            return;
-        }
-
-        if (!yearOfStudy) {
-            setError('Year of study is required');
-            return;
-        }
-
-        if (!letterOfProof) {
-            setError('Letter of proof is required');
-            return;
-        }
-
         setLoading(true);
 
         try {
+            // Validation
+            if (password !== confirmPassword) {
+                throw new Error('Passwords do not match');
+            }
+
+            if (password.length < 6) {
+                throw new Error('Password must be at least 6 characters');
+            }
+
+            if (!email.includes('.edu') && !email.includes('college')) {
+                throw new Error('Please use your official college email address');
+            }
+
+            if (!fullName.trim()) {
+                throw new Error('Full name is required');
+            }
+
+            if (!rollNo.trim()) {
+                throw new Error('Roll number is required');
+            }
+
+            if (!department.trim()) {
+                throw new Error('Department is required');
+            }
+
+            if (!clubName.trim()) {
+                throw new Error('Club name is required');
+            }
+
+            if (!clubInchargeFaculty.trim()) {
+                throw new Error('Club incharge faculty name is required');
+            }
+
+            if (!yearOfStudy) {
+                throw new Error('Year of study is required');
+            }
+
+            if (!letterOfProof) {
+                throw new Error('Letter of proof is required');
+            }
+
             const userData = {
                 displayName: fullName.trim(),
                 email: email.trim(),
@@ -115,7 +106,6 @@ export const SignUpForm: React.FC = () => {
 
         try {
             await signInWithGoogle();
-            setSuccess(true);
         } catch (error: any) {
             setError(error.message || 'Failed to sign up with Google');
         } finally {
@@ -132,13 +122,19 @@ export const SignUpForm: React.FC = () => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">Check Your Email</h3>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">Verification Email Sent!</h3>
                     <p className="text-sm text-gray-600 mb-4">
-                        We've sent a verification email to your college email address. Please click the link in the email to verify your account.
+                        A verification link has been sent to your college email address <strong>{email}</strong>. Please click the link in the email to verify your account.
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 mb-4">
                         After verification, you'll be able to submit your club application.
                     </p>
+                    <button
+                        onClick={() => router.push('/signin')}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    >
+                        Go to Sign In
+                    </button>
                 </div>
             </div>
         );
@@ -180,7 +176,7 @@ export const SignUpForm: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
                         placeholder="your.email@college.edu"
                     />
                     <p className="mt-1 text-xs text-gray-500">
@@ -198,7 +194,7 @@ export const SignUpForm: React.FC = () => {
                         value={rollNo}
                         onChange={(e) => setRollNo(e.target.value)}
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
                         placeholder="Enter your roll number"
                     />
                 </div>
@@ -213,7 +209,7 @@ export const SignUpForm: React.FC = () => {
                         value={department}
                         onChange={(e) => setDepartment(e.target.value)}
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
                         placeholder="e.g., Computer Science"
                     />
                 </div>
@@ -227,7 +223,7 @@ export const SignUpForm: React.FC = () => {
                         value={yearOfStudy}
                         onChange={(e) => setYearOfStudy(e.target.value)}
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                     >
                         <option value="">Select year</option>
                         <option value="1">1st Year</option>
@@ -247,7 +243,7 @@ export const SignUpForm: React.FC = () => {
                         value={clubName}
                         onChange={(e) => setClubName(e.target.value)}
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
                         placeholder="Enter club name"
                     />
                 </div>
@@ -262,7 +258,7 @@ export const SignUpForm: React.FC = () => {
                         value={clubInchargeFaculty}
                         onChange={(e) => setClubInchargeFaculty(e.target.value)}
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-400"
                         placeholder="Enter faculty name"
                     />
                 </div>
@@ -277,7 +273,7 @@ export const SignUpForm: React.FC = () => {
                         onChange={handleFileChange}
                         accept="image/*"
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                     />
                     <p className="mt-1 text-xs text-gray-500">
                         Upload a picture of your proof document
@@ -294,7 +290,7 @@ export const SignUpForm: React.FC = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                         minLength={6}
                     />
                 </div>
@@ -309,7 +305,7 @@ export const SignUpForm: React.FC = () => {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         required
-                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-gray-900"
                     />
                 </div>
 

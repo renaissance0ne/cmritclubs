@@ -16,7 +16,7 @@ export default function HomePage() {
           case 'approved':
             router.push('/dashboard');
             break;
-          case 'pending_review':
+          case 'pending':
             router.push('/pending-approval');
             break;
           case 'rejected':

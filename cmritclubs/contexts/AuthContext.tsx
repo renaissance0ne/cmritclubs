@@ -11,7 +11,7 @@ import {
     GoogleAuthProvider,
     signInWithPopup,
 } from 'firebase/auth';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import { AuthContextType, User } from '@/types/auth';
 
@@ -32,47 +32,89 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
-                setFirebaseUser(firebaseUser);
+            try {
+                if (firebaseUser) {
+                    setFirebaseUser(firebaseUser);
 
-                // Fetch user data from Firestore
-                try {
-                    const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-                    if (userDoc.exists()) {
-                        const userData = userDoc.data() as User;
-                        setUser(userData);
-                    } else {
-                        // Create initial user document if it doesn't exist
-                        const newUser: User = {
-                            uid: firebaseUser.uid,
-                            email: firebaseUser.email!,
-                            displayName: firebaseUser.displayName || '',
-                            role: 'club_leader', // Default role
-                            status: firebaseUser.emailVerified ? 'email_verified' : 'email_verified',
-                            createdAt: new Date(),
-                            updatedAt: new Date(),
-                        };
-
-                        await setDoc(doc(db, 'users', firebaseUser.uid), {
-                            ...newUser,
-                            createdAt: serverTimestamp(),
-                            updatedAt: serverTimestamp(),
-                        });
-
-                        setUser(newUser);
+                    // Try to fetch user data from Firestore
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+                        
+                        if (userDoc.exists()) {
+                            const userData = userDoc.data() as User & {
+                                createdAt: Timestamp | Date;
+                                updatedAt: Timestamp | Date;
+                            };
+                            setUser({
+                                ...userData,
+                                createdAt: userData.createdAt instanceof Timestamp ? userData.createdAt.toDate() : userData.createdAt || new Date(),
+                                updatedAt: userData.updatedAt instanceof Timestamp ? userData.updatedAt.toDate() : userData.updatedAt || new Date(),
+                            });
+                        } else {
+                            // Create initial user document if it doesn't exist
+                            await createUserDocument(firebaseUser);
+                        }
+                    } catch (firestoreError: any) {
+                        console.error('Error fetching user document:', firestoreError);
+                        
+                        // If it's a permission error, try to create the user document
+                        if (firestoreError.code === 'permission-denied') {
+                            console.log('Permission denied, attempting to create user document...');
+                            await createUserDocument(firebaseUser);
+                        } else {
+                            // For other errors, create a basic user object
+                            const basicUser: User = {
+                                uid: firebaseUser.uid,
+                                email: firebaseUser.email!,
+                                displayName: firebaseUser.displayName || '',
+                                role: 'club_leader',
+                                status: firebaseUser.emailVerified ? 'email_verified' : 'pending',
+                                createdAt: new Date(),
+                                updatedAt: new Date(),
+                            };
+                            setUser(basicUser);
+                        }
                     }
-                } catch (error) {
-                    console.error('Error fetching user data:', error);
+                } else {
+                    setFirebaseUser(null);
+                    setUser(null);
                 }
-            } else {
-                setFirebaseUser(null);
+            } catch (error) {
+                console.error('Error in auth state change:', error);
                 setUser(null);
+                setFirebaseUser(null);
+            } finally {
+                setLoading(false);
             }
-            setLoading(false);
         });
 
         return unsubscribe;
     }, []);
+
+    const createUserDocument = async (firebaseUser: FirebaseUser) => {
+        const newUser: User = {
+            uid: firebaseUser.uid,
+            email: firebaseUser.email!,
+            displayName: firebaseUser.displayName || '',
+            role: 'club_leader',
+            status: firebaseUser.emailVerified ? 'email_verified' : 'pending',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        };
+
+        try {
+            await setDoc(doc(db, 'users', firebaseUser.uid), {
+                ...newUser,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+            });
+            setUser(newUser);
+        } catch (error) {
+            console.error('Error creating user document:', error);
+            // Still set user state to prevent infinite loading
+            setUser(newUser);
+        }
+    };
 
     const signUp = async (email: string, password: string, userData?: any) => {
         try {
@@ -87,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 email: firebaseUser.email!,
                 displayName: userData?.displayName || firebaseUser.displayName || '',
                 role: 'club_leader',
-                status: 'email_verified',
+                status: 'pending',
                 // Additional fields from form
                 rollNo: userData?.rollNo || '',
                 department: userData?.department || '',
@@ -119,7 +161,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const signInWithGoogle = async () => {
         try {
             const provider = new GoogleAuthProvider();
-            // Force account selection to ensure college email is used
             provider.setCustomParameters({
                 prompt: 'select_account'
             });
@@ -127,26 +168,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const { user: firebaseUser } = await signInWithPopup(auth, provider);
 
             // Check if user document exists, create if not
-            const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-            if (!userDoc.exists()) {
-                const newUser = {
-                    uid: firebaseUser.uid,
-                    email: firebaseUser.email!,
-                    displayName: firebaseUser.displayName || '',
-                    role: 'club_leader',
-                    status: 'email_verified',
-                    // Initialize additional fields as empty for Google sign-up
-                    rollNo: '',
-                    department: '',
-                    clubName: '',
-                    clubInchargeFaculty: '',
-                    yearOfStudy: '',
-                    letterOfProof: '',
-                    createdAt: serverTimestamp(),
-                    updatedAt: serverTimestamp(),
-                };
+            try {
+                const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+                if (!userDoc.exists()) {
+                    const newUser = {
+                        uid: firebaseUser.uid,
+                        email: firebaseUser.email!,
+                        displayName: firebaseUser.displayName || '',
+                        role: 'club_leader',
+                        status: 'email_verified',
+                        rollNo: '',
+                        department: '',
+                        clubName: '',
+                        clubInchargeFaculty: '',
+                        yearOfStudy: '',
+                        letterOfProof: '',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                    };
 
-                await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+                    await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
+                }
+            } catch (error) {
+                console.error('Error checking/creating user document:', error);
+                // Continue with sign-in even if document creation fails
             }
         } catch (error) {
             console.error('Error signing in with Google:', error);
