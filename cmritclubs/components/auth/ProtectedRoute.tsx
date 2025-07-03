@@ -9,7 +9,7 @@ import { useEffect } from 'react';
 interface ProtectedRouteProps {
     children: React.ReactNode;
     requiredRole?: 'club_leader' | 'college_official';
-    requiredStatus?: 'email_verified' | 'pending_review' | 'approved' | 'rejected';
+    requiredStatus?: 'email_verified' | 'pending' | 'approved' | 'rejected';
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
@@ -59,7 +59,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                         router.push('/application-rejected');
                         break;
                     case 'approved':
-                        if (requiredStatus === 'email_verified' || requiredStatus === 'pending_review') {
+                        if (requiredStatus === 'email_verified' || requiredStatus === 'pending') {
                             // User is approved but trying to access earlier stage
                             router.push('/dashboard');
                         }

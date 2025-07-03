@@ -12,25 +12,33 @@ export const SignInForm: React.FC = () => {
     const { signIn, signInWithGoogle, firebaseUser, user } = useAuth();
     const router = useRouter();
 
-    // Handle redirect after successful authentication
     useEffect(() => {
         if (firebaseUser && user) {
-            // Redirect based on user status
-            switch (user.status) {
-                case 'approved':
-                    router.push('/dashboard');
-                    break;
-                case 'pending':
-                    router.push('/pending-approval');
-                    break;
-                case 'rejected':
-                    router.push('/application-rejected');
-                    break;
-                case 'email_verified':
-                    router.push('/application');
-                    break;
-                default:
-                    router.push('/dashboard');
+            if (user.role === 'college_official') {
+                if (user.officialRole === 'director') {
+                    router.push('/director/dashboard');
+                } else if (user.officialRole?.includes('hod')) {
+                    router.push('/hod/dashboard');
+                } else {
+                    router.push('/admin/dashboard');
+                }
+            } else {
+                switch (user.status) {
+                    case 'approved':
+                        router.push('/dashboard');
+                        break;
+                    case 'pending':
+                        router.push('/pending-approval');
+                        break;
+                    case 'rejected':
+                        router.push('/application-rejected');
+                        break;
+                    case 'email_verified':
+                        router.push('/application');
+                        break;
+                    default:
+                        router.push('/dashboard');
+                }
             }
         }
     }, [firebaseUser, user, router]);
@@ -39,27 +47,22 @@ export const SignInForm: React.FC = () => {
         e.preventDefault();
         setError('');
         setLoading(true);
-
         try {
             await signIn(email, password);
-            // Don't set loading to false here - let the useEffect handle the redirect
-            // The loading state will be maintained until the redirect happens
         } catch (error: any) {
             setError(error.message || 'Failed to sign in');
-            setLoading(false); // Only set loading to false on error
+            setLoading(false);
         }
     };
 
     const handleGoogleSignIn = async () => {
         setError('');
         setLoading(true);
-
         try {
             await signInWithGoogle();
-            // Don't set loading to false here - let the useEffect handle the redirect
         } catch (error: any) {
             setError(error.message || 'Failed to sign in with Google');
-            setLoading(false); // Only set loading to false on error
+            setLoading(false);
         }
     };
 

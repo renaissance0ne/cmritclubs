@@ -54,7 +54,7 @@ export interface ClubApplication {
     letterOfProofUrl: string;
     expectedGraduationYear: number;
     expectedGraduationMonth: string;
-    status: 'pending_review' | 'approved' | 'rejected';
+    status: 'pending' | 'approved' | 'rejected';
     submittedAt: Date;
     reviewedAt?: Date;
     reviewedBy?: string;
