@@ -16,9 +16,12 @@ export default function DashboardPage() {
                                 <h1 className="text-xl font-semibold">CMRIT Clubs Portal</h1>
                             </div>
                             <div className="flex items-center space-x-4">
-                <span className="text-sm text-gray-700">
-                  Welcome, {user?.displayName || user?.email}
-                </span>
+                                <span className="text-sm text-gray-700">
+                                    Welcome, {user?.displayName || user?.email}
+                                </span>
+                                <a href="/dashboard/letters/new" className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                                    Draft New Letter
+                                </a>
                                 <button
                                     onClick={signOut}
                                     className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"

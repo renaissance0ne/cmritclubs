@@ -40,5 +40,15 @@ service cloud.firestore {
       allow read, update: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'college_official';
     }
+    
+    // Rules for the 'permissionLetters' collection
+    match /permissionLetters/{letterId} {
+      // Allow club leaders to create their own letters
+      allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'club_leader';
+      // Allow club leaders to read their own letters
+      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
+      // Allow college officials to read and update all letters
+      allow read, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'college_official';
+    }
   }
 }
