@@ -122,14 +122,14 @@ export const PermissionLettersDashboard: React.FC = () => {
             <div className="mt-6 space-y-6">
                 {letters.length === 0 ? <p className="text-center text-black">No {filter} letters to display.</p> : letters.map(letter => (
                     <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md text-black">
+                        <h3 className="text-xl font-bold text-black">{letter.clubName}</h3>
+                        
                         <div className="text-sm mb-4 text-black">
                             <p>To,</p>
                             <p>The Director,</p>
                             <p>CMR Institute of Technology</p>
                             <p>Medchal</p>
                         </div>
-
-                        <h3 className="text-xl font-bold text-black">{letter.clubName}</h3>
                         <p className="text-sm text-black">Submitted: {letter.createdAt?.toDate().toLocaleDateString()}</p>
                         <p className="mt-4 text-black"><strong>Subject:</strong> {letter.subject}</p>
                         <p className="mt-2 whitespace-pre-wrap text-black">{letter.body}</p>
