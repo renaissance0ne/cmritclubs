@@ -15,12 +15,17 @@ export const SignInForm: React.FC = () => {
     useEffect(() => {
         if (firebaseUser && user) {
             if (user.role === 'college_official') {
+                // Updated redirection logic for all official roles
                 if (user.officialRole === 'director') {
                     router.push('/director/dashboard');
+                } else if (user.officialRole === 'tpo') {
+                    router.push('/tpo/dashboard');
+                } else if (user.officialRole === 'dsaa') {
+                    router.push('/dsaa/dashboard');
                 } else if (user.officialRole?.includes('hod')) {
                     router.push('/hod/dashboard');
                 } else {
-                    router.push('/admin/dashboard');
+                    router.push('/admin/dashboard'); // Fallback
                 }
             } else {
                 switch (user.status) {

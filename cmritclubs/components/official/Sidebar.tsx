@@ -10,15 +10,26 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({ setFilter, signOut }) => {
     const { user } = useAuth();
 
-    const isHod = user?.officialRole?.includes('hod');
-    const dashboardLink = isHod ? '/hod/dashboard' : '/director/dashboard';
-    const lettersLink = isHod ? '/hod/dashboard/letters' : '/director/dashboard/letters';
+    // Dynamically generate the base path for links based on the user's role
+    let basePath = '/admin'; // Default fallback
+    if (user?.officialRole) {
+        // HOD roles all point to the same /hod dashboard
+        if (user.officialRole.includes('hod')) {
+            basePath = '/hod';
+        } else {
+            // Other roles like director, tpo, dsaa have their own paths
+            basePath = `/${user.officialRole}`;
+        }
+    }
+
+    const dashboardLink = `${basePath}/dashboard`;
+    const lettersLink = `${basePath}/dashboard/letters`;
 
     return (
         <aside className="w-64 bg-white shadow-md relative min-h-screen">
             <div className="p-6">
-                <h2 className="text-xl font-semibold">CMRIT Clubs Portal</h2>
-                <p className="text-sm text-gray-600 mt-2">Welcome, {user?.displayName || user?.email}</p>
+                <h2 className="text-xl font-semibold text-black">CMRIT Clubs Portal</h2>
+                <p className="text-sm text-black mt-2">Welcome, {user?.displayName || user?.email}</p>
             </div>
 
             <nav className="mt-6">
@@ -26,7 +37,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ setFilter, signOut }) => {
                     <li>
                         <a
                             href={dashboardLink}
-                            className="w-full text-left px-6 py-3 hover:bg-gray-100 block transition-colors"
+                            className="w-full text-left px-6 py-3 hover:bg-gray-100 block transition-colors text-black"
                         >
                             Club Applications
                         </a>
@@ -34,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ setFilter, signOut }) => {
                     <li>
                         <a
                             href={lettersLink}
-                            className="w-full text-left px-6 py-3 hover:bg-gray-100 block transition-colors"
+                            className="w-full text-left px-6 py-3 hover:bg-gray-100 block transition-colors text-black"
                         >
                             Permission Letters
                         </a>
@@ -42,7 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ setFilter, signOut }) => {
                     <li>
                         <button
                             onClick={() => setFilter('pending')}
-                            className="w-full text-left px-6 py-3 hover:bg-gray-100 transition-colors"
+                            className="w-full text-left px-6 py-3 hover:bg-gray-100 transition-colors text-black"
                         >
                             Pending
                         </button>
@@ -50,7 +61,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ setFilter, signOut }) => {
                     <li>
                         <button
                             onClick={() => setFilter('approved')}
-                            className="w-full text-left px-6 py-3 hover:bg-gray-100 transition-colors"
+                            className="w-full text-left px-6 py-3 hover:bg-gray-100 transition-colors text-black"
                         >
                             Approved
                         </button>
@@ -58,7 +69,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ setFilter, signOut }) => {
                     <li>
                         <button
                             onClick={() => setFilter('rejected')}
-                            className="w-full text-left px-6 py-3 hover:bg-gray-100 transition-colors"
+                            className="w-full text-left px-6 py-3 hover:bg-gray-100 transition-colors text-black"
                         >
                             Rejected
                         </button>

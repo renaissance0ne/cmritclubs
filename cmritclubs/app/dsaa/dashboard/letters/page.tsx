@@ -3,10 +3,10 @@
 import { OfficialDashboard } from '@/components/official/OfficialDashboard';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
-export default function DirectorLettersDashboardPage() {
+export default function DsaaLettersDashboardPage() {
     return (
-        <ProtectedRoute requiredRole="college_official">
-            <OfficialDashboard role="director" view="letters" />
+        <ProtectedRoute requiredRole="college_official" requiredOfficialRoles={['dsaa']}>
+            <OfficialDashboard view="letters" />
         </ProtectedRoute>
     );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
@@ -16,7 +16,7 @@ export const PermissionLettersDashboard: React.FC = () => {
     const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
     const [updating, setUpdating] = useState<string | null>(null);
 
-    const getMyApprovalRole = (): keyof ApprovalStatus | null => {
+    const getMyApprovalRole = useCallback((): keyof ApprovalStatus | null => {
         if (!user || user.role !== 'college_official') return null;
         switch (user.officialRole) {
             case 'director': return 'director';
@@ -29,7 +29,7 @@ export const PermissionLettersDashboard: React.FC = () => {
             case 'ece_hod': return 'eceHod';
             default: return null;
         }
-    };
+    }, [user]);
 
     const calculateOverallStatus = (approvals: ApprovalStatus): 'pending' | 'approved' | 'rejected' => {
         const statuses = Object.values(approvals);
@@ -38,14 +38,20 @@ export const PermissionLettersDashboard: React.FC = () => {
         return 'pending';
     };
 
-    const fetchLetters = async () => {
-        if (!user) return;
+    const fetchLetters = useCallback(async () => {
+        const myRole = getMyApprovalRole();
+        if (!user || !myRole) {
+            setLoading(false);
+            return;
+        };
         setLoading(true);
         try {
+            // Corrected query to fetch letters relevant to the official
             const q = query(
                 collection(db, 'permissionLetters'),
-                where('status', '==', filter)
+                where(`approvals.${myRole}`, '==', filter)
             );
+            
             const querySnapshot = await getDocs(q);
             const fetchedLetters = querySnapshot.docs.map(doc => ({
                 id: doc.id,
@@ -57,11 +63,11 @@ export const PermissionLettersDashboard: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user, filter, getMyApprovalRole]);
 
     useEffect(() => {
         fetchLetters();
-    }, [user, filter]);
+    }, [fetchLetters]);
 
     const handleLetterApproval = async (letterId: string, newStatus: 'approved' | 'rejected') => {
         const myRole = getMyApprovalRole();
@@ -109,38 +115,36 @@ export const PermissionLettersDashboard: React.FC = () => {
         }
     };
 
-    if (loading) return <div>Loading...</div>;
+    if (loading) return <div className="text-black">Loading...</div>;
 
     return (
         <div>
-            {/* Filter buttons remain the same */}
             <div className="mt-6 space-y-6">
-                {letters.length === 0 ? <p className="text-center text-gray-500">No letters to display.</p> : letters.map(letter => (
+                {letters.length === 0 ? <p className="text-center text-black">No {filter} letters to display.</p> : letters.map(letter => (
                     <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md text-black">
-                        {/* Added Header */}
-                        <div className="text-sm mb-4">
+                        <div className="text-sm mb-4 text-black">
                             <p>To,</p>
                             <p>The Director,</p>
                             <p>CMR Institute of Technology</p>
                             <p>Medchal</p>
                         </div>
 
-                        <h3 className="text-xl font-bold">{letter.clubName}</h3>
-                        <p className="text-sm text-gray-500">Submitted: {letter.createdAt?.toDate().toLocaleDateString()}</p>
-                        <p className="mt-4"><strong>Subject:</strong> {letter.subject}</p>
-                        <p className="mt-2 whitespace-pre-wrap">{letter.body}</p>
-                        <p className="mt-4"><strong>Sincerely,</strong><br/>{letter.sincerely}</p>
+                        <h3 className="text-xl font-bold text-black">{letter.clubName}</h3>
+                        <p className="text-sm text-black">Submitted: {letter.createdAt?.toDate().toLocaleDateString()}</p>
+                        <p className="mt-4 text-black"><strong>Subject:</strong> {letter.subject}</p>
+                        <p className="mt-2 whitespace-pre-wrap text-black">{letter.body}</p>
+                        <p className="mt-4 text-black"><strong>Sincerely,</strong><br/>{letter.sincerely}</p>
 
                         <div className="mt-6">
-                            <h4 className="font-semibold">Roll Numbers for Approval:</h4>
+                            <h4 className="font-semibold text-black">Roll Numbers for Approval:</h4>
                             <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-2">
                                 {departmentOrder.map(dept => {
                                     const rns = letter.rollNos[dept as keyof typeof letter.rollNos];
                                     if (!rns) return null;
                                     return (
                                     <div key={dept}>
-                                        <h5 className="text-sm font-bold capitalize">{dept === 'frsh' ? 'Freshman' : dept}</h5>
-                                        <ul className="text-xs list-inside space-y-1">
+                                        <h5 className="text-sm font-bold capitalize text-black">{dept === 'frsh' ? 'Freshman' : dept}</h5>
+                                        <ul className="text-xs list-inside space-y-1 text-black">
                                             {rns.split('\n').filter(rn => rn.trim()).map(rn => (
                                                 <li key={rn} className="flex items-center justify-between">
                                                     <span>{rn}</span>

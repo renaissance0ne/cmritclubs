@@ -9,13 +9,13 @@ import { Sidebar } from './Sidebar';
 
 interface ApprovalStatus {
     director: 'pending' | 'approved' | 'rejected';
+    dsaa: 'pending' | 'approved' | 'rejected';
+    tpo: 'pending' | 'approved' | 'rejected';
     cseHod: 'pending' | 'approved' | 'rejected';
     csmHod: 'pending' | 'approved' | 'rejected';
     csdHod: 'pending' | 'approved' | 'rejected';
     frshHod: 'pending' | 'approved' | 'rejected';
     eceHod: 'pending' | 'approved' | 'rejected';
-    tpo: 'pending' | 'approved' | 'rejected';
-    dsaa: 'pending' | 'approved' | 'rejected';
 }
 
 interface UserApplication {
@@ -38,80 +38,15 @@ interface UserApplication {
 }
 
 interface OfficialDashboardProps {
-    role: 'admin' | 'director' | 'hod';
     view: 'applications' | 'letters';
 }
 
-export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view }) => {
+export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ view }) => {
     const { user, signOut } = useAuth();
     const [applications, setApplications] = useState<UserApplication[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
     const [updating, setUpdating] = useState<string | null>(null);
-
-    useEffect(() => {
-        const fetchApplications = async () => {
-            if (!user || view !== 'applications') return;
-            setLoading(true);
-            try {
-                // Query users collection for club leaders with submitted applications
-                const q = query(
-                    collection(db, 'users'),
-                    where('role', '==', 'club_leader')
-                );
-                const querySnapshot = await getDocs(q);
-
-                const fetchedApplications = querySnapshot.docs
-                    .map(doc => ({ uid: doc.id, ...doc.data() } as UserApplication))
-                    .filter(app => {
-                        // Only show applications that have been submitted (have required fields)
-                        return app.clubName && app.displayName && app.rollNo;
-                    })
-                    .filter(app => {
-                        // Get the current user's role for filtering
-                        const myRole = getMyApprovalRole();
-                        if (!myRole) return false;
-
-                        // Initialize approvals if not present
-                        const approvals = app.approvals || {
-                            director: 'pending', dsaa: 'pending', tpo: 'pending',
-                            cseHod: 'pending', csmHod: 'pending', csdHod: 'pending',
-                            frshHod: 'pending', eceHod: 'pending'
-                        };
-                        const myApprovalStatus = approvals[myRole];
-                        const overallStatus = app.overallStatus || calculateOverallStatus(approvals);
-
-                        // Filter based on what this official wants to see
-                        if (filter === 'pending') {
-                            // Show applications that are pending overall AND this official hasn't decided yet
-                            return overallStatus === 'pending' && myApprovalStatus === 'pending';
-                        } else if (filter === 'approved') {
-                            // Show applications that this official has approved
-                            return myApprovalStatus === 'approved';
-                        } else if (filter === 'rejected') {
-                            // Show applications that this official has rejected
-                            return myApprovalStatus === 'rejected';
-                        }
-                        return false;
-                    });
-
-                setApplications(fetchedApplications);
-            } catch (error) {
-                console.error('Error fetching applications:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchApplications();
-    }, [user, filter, view]);
-
-    const calculateOverallStatus = (approvals: ApprovalStatus): 'pending' | 'approved' | 'rejected' => {
-        const statuses = Object.values(approvals);
-        if (statuses.every(status => status === 'approved')) return 'approved';
-        if (statuses.some(status => status === 'rejected')) return 'rejected';
-        return 'pending';
-    };
 
     const getMyApprovalRole = (): keyof ApprovalStatus | null => {
         if (!user || user.role !== 'college_official') return null;
@@ -128,6 +63,56 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
         }
     };
 
+    const calculateOverallStatus = (approvals: ApprovalStatus): 'pending' | 'approved' | 'rejected' => {
+        const statuses = Object.values(approvals);
+        if (statuses.every(status => status === 'approved')) return 'approved';
+        if (statuses.some(status => status === 'rejected')) return 'rejected';
+        return 'pending';
+    };
+
+    useEffect(() => {
+        const fetchApplications = async () => {
+            if (!user || view !== 'applications') return;
+            setLoading(true);
+            try {
+                const q = query(
+                    collection(db, 'users'),
+                    where('role', '==', 'club_leader')
+                );
+                const querySnapshot = await getDocs(q);
+
+                const fetchedApplications = querySnapshot.docs
+                    .map(doc => ({ uid: doc.id, ...doc.data() } as UserApplication))
+                    .filter(app => app.clubName && app.displayName && app.rollNo)
+                    .filter(app => {
+                        const myRole = getMyApprovalRole();
+                        if (!myRole) return false;
+
+                        const approvals = app.approvals || {
+                            director: 'pending', dsaa: 'pending', tpo: 'pending',
+                            cseHod: 'pending', csmHod: 'pending', csdHod: 'pending',
+                            frshHod: 'pending', eceHod: 'pending'
+                        };
+                        const myApprovalStatus = approvals[myRole];
+                        
+                        if (filter === 'pending') {
+                            return myApprovalStatus === 'pending';
+                        } else {
+                            return myApprovalStatus === filter;
+                        }
+                    });
+
+                setApplications(fetchedApplications);
+            } catch (error) {
+                console.error('Error fetching applications:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchApplications();
+    }, [user, filter, view]);
+
     const handleApprovalUpdate = async (uid: string, status: 'approved' | 'rejected') => {
         const myRole = getMyApprovalRole();
         if (!myRole) return;
@@ -137,7 +122,6 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
             const application = applications.find(app => app.uid === uid);
             if (!application) return;
 
-            // Initialize approvals if not present
             const currentApprovals = application.approvals || {
                 director: 'pending', dsaa: 'pending', tpo: 'pending',
                 cseHod: 'pending', csmHod: 'pending', csdHod: 'pending',
@@ -155,7 +139,6 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                 updatedAt: serverTimestamp()
             };
 
-            // If fully approved, update main status
             if (newOverallStatus === 'approved') {
                 updateData.status = 'approved';
             } else if (newOverallStatus === 'rejected') {
@@ -163,69 +146,13 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
             }
 
             await updateDoc(doc(db, 'users', uid), updateData);
-
-            // Refetch applications to update the view
-            const q = query(
-                collection(db, 'users'),
-                where('role', '==', 'club_leader')
-            );
-            const querySnapshot = await getDocs(q);
-
-            const fetchedApplications = querySnapshot.docs
-                .map(doc => ({ uid: doc.id, ...doc.data() } as UserApplication))
-                .filter(app => {
-                    return app.clubName && app.displayName && app.rollNo;
-                })
-                .filter(app => {
-                    const myRole = getMyApprovalRole();
-                    if (!myRole) return false;
-
-                    const approvals = app.approvals || {
-                        director: 'pending', dsaa: 'pending', tpo: 'pending',
-                        cseHod: 'pending', csmHod: 'pending', csdHod: 'pending',
-                        frshHod: 'pending', eceHod: 'pending'
-                    };
-
-                    const myApprovalStatus = approvals[myRole];
-                    const overallStatus = app.overallStatus || calculateOverallStatus(approvals);
-
-                    if (filter === 'pending') {
-                        return overallStatus === 'pending' && myApprovalStatus === 'pending';
-                    } else if (filter === 'approved') {
-                        return myApprovalStatus === 'approved';
-                    } else if (filter === 'rejected') {
-                        return myApprovalStatus === 'rejected';
-                    }
-                    return false;
-                });
-
-            setApplications(fetchedApplications);
+            setApplications(prev => prev.filter(app => app.uid !== uid));
 
         } catch (error) {
             console.error('Error updating approval:', error);
         } finally {
             setUpdating(null);
         }
-    };
-
-    const canApproveApplication = (application: UserApplication): boolean => {
-        const myRole = getMyApprovalRole();
-        if (!myRole) {
-            console.log('No approval role found for user:', user?.officialRole);
-            return false;
-        }
-
-        // Initialize approvals if not present
-        if (!application.approvals) {
-            console.log('No approvals object found for application:', application.uid);
-            return true; // Can approve if no approvals structure exists yet
-        }
-
-        const currentStatus = application.approvals[myRole];
-        console.log(`Current approval status for ${myRole}:`, currentStatus);
-
-        // Check if this official hasn't already approved/rejected
-        return currentStatus === 'pending';
     };
 
     const getStatusColor = (status: string) => {
@@ -249,12 +176,12 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
     };
 
     return (
-        <div className="min-h-screen flex">
+        <div className="min-h-screen flex text-black">
             <Sidebar setFilter={setFilter} signOut={signOut} />
             <main className="flex-1 p-8 bg-gray-100">
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold capitalize">{filter} {view}</h1>
-                    <div className="text-sm text-gray-600">
+                    <h1 className="text-3xl font-bold capitalize text-black">{filter} {view}</h1>
+                    <div className="text-sm text-black">
                         Role: {user?.officialRole?.replace('_', ' ').toUpperCase()}
                     </div>
                 </div>
@@ -266,20 +193,20 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                         </div>
                     ) : applications.length === 0 ? (
                         <div className="text-center py-12">
-                            <p className="text-gray-500 text-lg">No {filter} applications found.</p>
+                            <p className="text-black text-lg">No {filter} applications found.</p>
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                             {applications.map(app => (
                                 <div key={app.uid} className="bg-white p-6 rounded-lg shadow-md">
                                     <div className="flex justify-between items-start mb-4">
-                                        <h2 className="text-xl font-semibold text-gray-800">{app.clubName}</h2>
+                                        <h2 className="text-xl font-semibold text-black">{app.clubName}</h2>
                                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(app.overallStatus || 'pending')}`}>
                                             {(app.overallStatus || 'pending').toUpperCase()}
                                         </span>
                                     </div>
 
-                                    <div className="space-y-2 text-sm text-gray-600 mb-4">
+                                    <div className="space-y-2 text-sm text-black mb-4">
                                         <p><strong>Applicant:</strong> {app.displayName}</p>
                                         <p><strong>Roll No:</strong> {app.rollNo}</p>
                                         <p><strong>Email:</strong> {app.email}</p>
@@ -307,14 +234,14 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
 
                                     {app.approvals && (
                                         <div className="mb-4">
-                                            <p className="text-sm font-medium text-gray-700 mb-2">Approval Status:</p>
+                                            <p className="text-sm font-medium text-black mb-2">Approval Status:</p>
                                             <div className="grid grid-cols-2 gap-1 text-xs">
                                                 {Object.entries(officialRoles).map(([key, title]) => {
                                                     const roleKey = key as keyof ApprovalStatus;
                                                     const status = app.approvals[roleKey];
                                                     return (
                                                         <div key={key} className="flex justify-between">
-                                                            <span className="text-gray-600">{title}:</span>
+                                                            <span className="text-black">{title}:</span>
                                                             <span className={`px-1 rounded ${getStatusColor(status)}`}>
                                                                 {status}
                                                             </span>
@@ -325,8 +252,7 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                                         </div>
                                     )}
 
-                                    {/* Action buttons for pending applications */}
-                                    {filter === 'pending' && canApproveApplication(app) && (
+                                    {filter === 'pending' && (
                                         <div className="flex space-x-2">
                                             <button
                                                 onClick={() => handleApprovalUpdate(app.uid, 'approved')}
@@ -344,7 +270,7 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                                             </button>
                                         </div>
                                     )}
-
+                                    
                                     {/* Show if already reviewed by this official */}
                                     {app.approvals && getMyApprovalRole() && app.approvals[getMyApprovalRole()!] !== 'pending' && (
                                         <div className="mt-4 p-2 bg-gray-50 rounded text-sm text-gray-600">
