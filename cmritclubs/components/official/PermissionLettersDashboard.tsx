@@ -9,8 +9,6 @@ import { ApprovalStatus } from '@/types/auth';
 import { LetterCard } from '@/components/ui/LetterCard';
 import { LetterDetailModal } from '@/components/ui/LetterDetailModal';
 
-const departmentOrder = ['cse', 'csm', 'csd', 'frsh', 'ece'];
-
 export const PermissionLettersDashboard: React.FC = () => {
     const { user } = useAuth();
     const [letters, setLetters] = useState<PermissionLetter[]>([]);

@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { useAuth } from '@/contexts/AuthContext';
 import { LettersList } from '@/components/dashboard/LetterList';
 
 export default function LettersPage() {
-    const { user } = useAuth();
     const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
 
     return (

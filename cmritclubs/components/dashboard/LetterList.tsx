@@ -72,15 +72,6 @@ export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
         setSelectedLetter(null);
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case 'approved': return 'text-green-600 bg-green-100';
-            case 'rejected': return 'text-red-600 bg-red-100';
-            case 'pending': return 'text-yellow-600 bg-yellow-100';
-            default: return 'text-gray-600 bg-gray-100';
-        }
-    };
-
     if (loading) {
         return <div className="text-center p-10">Loading...</div>;
     }
