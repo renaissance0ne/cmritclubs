@@ -15,6 +15,7 @@ export const PermissionLettersDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
     const [updating, setUpdating] = useState<string | null>(null);
+    const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
 
     const getMyApprovalRole = useCallback((): keyof ApprovalStatus | null => {
         if (!user || user.role !== 'college_official') return null;
@@ -69,6 +70,11 @@ export const PermissionLettersDashboard: React.FC = () => {
         fetchLetters();
     }, [fetchLetters]);
 
+    // Reset selected letter when filter changes
+    useEffect(() => {
+        setSelectedLetter(null);
+    }, [filter]);
+
     const handleLetterApproval = async (letterId: string, newStatus: 'approved' | 'rejected') => {
         const myRole = getMyApprovalRole();
         if (!user || !myRole) return;
@@ -117,6 +123,80 @@ export const PermissionLettersDashboard: React.FC = () => {
 
     if (loading) return <div className="text-black">Loading...</div>;
 
+    // If a letter is selected, show detailed view
+    if (selectedLetter) {
+        const letter = letters.find(l => l.id === selectedLetter);
+        if (!letter) return <div className="text-black">Letter not found</div>;
+        
+        return (
+            <div>
+                <div className="mb-4 flex items-center space-x-4">
+                    <button 
+                        onClick={() => setSelectedLetter(null)}
+                        className="flex items-center space-x-2 px-3 py-2 bg-gray-200 text-gray-700 rounded-md text-sm hover:bg-gray-300"
+                    >
+                        <span>←</span>
+                        <span>Back to Grid</span>
+                    </button>
+                    <h2 className="text-lg font-semibold text-black">Letter Details</h2>
+                </div>
+                
+                <div className="bg-white p-6 rounded-lg shadow-md text-black">
+                    <h3 className="text-xl font-bold text-black">{letter.clubName}</h3>
+                    
+                    <div className="text-sm mb-4 text-black">
+                        <p>To,</p>
+                        <p>The Director,</p>
+                        <p>CMR Institute of Technology</p>
+                        <p>Medchal</p>
+                    </div>
+                    <p className="text-sm text-black">Submitted: {letter.createdAt?.toDate().toLocaleDateString()}</p>
+                    <p className="mt-4 text-black"><strong>Subject:</strong> {letter.subject}</p>
+                    <p className="mt-2 whitespace-pre-wrap text-black">{letter.body}</p>
+                    <p className="mt-4 text-black"><strong>Sincerely,</strong><br/>{letter.sincerely}</p>
+
+                    <div className="mt-6">
+                        <h4 className="font-semibold text-black">Roll Numbers for Approval:</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-2">
+                            {departmentOrder.map(dept => {
+                                const rns = letter.rollNos[dept as keyof typeof letter.rollNos];
+                                if (!rns) return null;
+                                return (
+                                <div key={dept}>
+                                    <h5 className="text-sm font-bold capitalize text-black">{dept === 'frsh' ? 'Freshman' : dept}</h5>
+                                    <ul className="text-xs list-inside space-y-1 text-black">
+                                        {rns.split('\n').filter(rn => rn.trim()).map(rn => (
+                                            <li key={rn} className="flex items-center justify-between">
+                                                <span>{rn}</span>
+                                                {user?.officialRole === `${dept}_hod` && filter === 'pending' && (
+                                                    <div className="flex space-x-1">
+                                                        <button onClick={() => handleRollNoApproval(letter.id, dept, rn, 'approved')} disabled={updating === `${letter.id}-${rn}`} className="text-green-500 disabled:opacity-50">✓</button>
+                                                        <button onClick={() => handleRollNoApproval(letter.id, dept, rn, 'rejected')} disabled={updating === `${letter.id}-${rn}`} className="text-red-500 disabled:opacity-50">✗</button>
+                                                    </div>
+                                                )}
+                                                <span className={`text-xs font-semibold ${letter.rollNoApprovals?.[dept]?.[rn] === 'approved' ? 'text-green-600' : letter.rollNoApprovals?.[dept]?.[rn] === 'rejected' ? 'text-red-600' : 'text-gray-400'}`}>
+                                                    {letter.rollNoApprovals?.[dept]?.[rn] || 'Pending'}
+                                                </span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )})}
+                        </div>
+                    </div>
+
+                    {filter === 'pending' && (
+                        <div className="mt-6 flex space-x-2">
+                            <button onClick={() => handleLetterApproval(letter.id, 'approved')} disabled={updating === letter.id} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50">Approve Letter</button>
+                            <button onClick={() => handleLetterApproval(letter.id, 'rejected')} disabled={updating === letter.id} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50">Reject Letter</button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // Grid view (default)
     return (
         <div>
             <div className="mb-4 flex space-x-2">
@@ -139,61 +219,24 @@ export const PermissionLettersDashboard: React.FC = () => {
                     Rejected
                 </button>
             </div>
-            <div className="mt-6 space-y-6">
-                {letters.length === 0 ? <p className="text-center text-black">No {filter} letters to display.</p> : letters.map(letter => (
-                    <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md text-black">
-                        <h3 className="text-xl font-bold text-black">{letter.clubName}</h3>
-                        
-                        <div className="text-sm mb-4 text-black">
-                            <p>To,</p>
-                            <p>The Director,</p>
-                            <p>CMR Institute of Technology</p>
-                            <p>Medchal</p>
+            
+            {letters.length === 0 ? (
+                <p className="text-center text-black">No {filter} letters to display.</p>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {letters.map(letter => (
+                        <div 
+                            key={letter.id} 
+                            className="bg-white p-6 rounded-lg shadow-md text-black cursor-pointer hover:shadow-lg transition-shadow"
+                            onClick={() => setSelectedLetter(letter.id)}
+                        >
+                            <h3 className="text-lg font-bold text-black mb-2">{letter.clubName}</h3>
+                            <p className="text-sm text-gray-600 mb-2"><strong>Subject:</strong> {letter.subject}</p>
+                            <p className="text-sm text-gray-500">Submitted: {letter.createdAt?.toDate().toLocaleDateString()}</p>
                         </div>
-                        <p className="text-sm text-black">Submitted: {letter.createdAt?.toDate().toLocaleDateString()}</p>
-                        <p className="mt-4 text-black"><strong>Subject:</strong> {letter.subject}</p>
-                        <p className="mt-2 whitespace-pre-wrap text-black">{letter.body}</p>
-                        <p className="mt-4 text-black"><strong>Sincerely,</strong><br/>{letter.sincerely}</p>
-
-                        <div className="mt-6">
-                            <h4 className="font-semibold text-black">Roll Numbers for Approval:</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-2">
-                                {departmentOrder.map(dept => {
-                                    const rns = letter.rollNos[dept as keyof typeof letter.rollNos];
-                                    if (!rns) return null;
-                                    return (
-                                    <div key={dept}>
-                                        <h5 className="text-sm font-bold capitalize text-black">{dept === 'frsh' ? 'Freshman' : dept}</h5>
-                                        <ul className="text-xs list-inside space-y-1 text-black">
-                                            {rns.split('\n').filter(rn => rn.trim()).map(rn => (
-                                                <li key={rn} className="flex items-center justify-between">
-                                                    <span>{rn}</span>
-                                                    {user?.officialRole === `${dept}_hod` && filter === 'pending' && (
-                                                        <div className="flex space-x-1">
-                                                            <button onClick={() => handleRollNoApproval(letter.id, dept, rn, 'approved')} disabled={updating === `${letter.id}-${rn}`} className="text-green-500 disabled:opacity-50">✓</button>
-                                                            <button onClick={() => handleRollNoApproval(letter.id, dept, rn, 'rejected')} disabled={updating === `${letter.id}-${rn}`} className="text-red-500 disabled:opacity-50">✗</button>
-                                                        </div>
-                                                    )}
-                                                    <span className={`text-xs font-semibold ${letter.rollNoApprovals?.[dept]?.[rn] === 'approved' ? 'text-green-600' : letter.rollNoApprovals?.[dept]?.[rn] === 'rejected' ? 'text-red-600' : 'text-gray-400'}`}>
-                                                        {letter.rollNoApprovals?.[dept]?.[rn] || 'Pending'}
-                                                    </span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )})}
-                            </div>
-                        </div>
-
-                        {filter === 'pending' && (
-                            <div className="mt-6 flex space-x-2">
-                                <button onClick={() => handleLetterApproval(letter.id, 'approved')} disabled={updating === letter.id} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50">Approve Letter</button>
-                                <button onClick={() => handleLetterApproval(letter.id, 'rejected')} disabled={updating === letter.id} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50">Reject Letter</button>
-                            </div>
-                        )}
-                    </div>
-                ))}
-            </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };
