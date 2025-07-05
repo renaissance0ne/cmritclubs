@@ -282,7 +282,7 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ view }) =>
                         </div>
                     )
                 ) : (
-                    <PermissionLettersDashboard />
+                    <PermissionLettersDashboard filter={filter} />
                 )}
             </main>
         </div>

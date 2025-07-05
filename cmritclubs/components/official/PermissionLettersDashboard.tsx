@@ -8,11 +8,14 @@ import { PermissionLetter } from '@/types/letters';
 import { ApprovalStatus } from '@/types/auth';
 import { LetterModal } from '@/components/common/LetterModal';
 
-export const PermissionLettersDashboard: React.FC = () => {
+interface PermissionLettersDashboardProps {
+    filter: 'pending' | 'approved' | 'rejected';
+}
+
+export const PermissionLettersDashboard: React.FC<PermissionLettersDashboardProps> = ({ filter }) => {
     const { user } = useAuth();
     const [letters, setLetters] = useState<PermissionLetter[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter] = useState<'pending' | 'approved' | 'rejected'>('pending');
     const [updating, setUpdating] = useState<string | null>(null);
     const [selectedLetter, setSelectedLetter] = useState<PermissionLetter | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
