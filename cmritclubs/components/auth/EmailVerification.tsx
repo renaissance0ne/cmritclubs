@@ -1,12 +1,25 @@
 'use client'
 
-import {useState} from "react";
-import {useAuth} from "@/contexts/AuthContext";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRouter } from "next/navigation";
 
 export const EmailVerification: React.FC = () => {
-    const { firebaseUser, sendEmailVerification } = useAuth();
+    const { firebaseUser, user, sendEmailVerification } = useAuth();
+    const router = useRouter();
     const [emailSent, setEmailSent] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (firebaseUser?.emailVerified) {
+            // Once email is verified, redirect user to the appropriate page
+            if (user?.status === 'pending') {
+                router.push('/pending-approval');
+            } else {
+                router.push('/dashboard');
+            }
+        }
+    }, [firebaseUser, user, router]);
 
     const handleResendEmail = async () => {
         setLoading(true);

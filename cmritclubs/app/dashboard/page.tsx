@@ -19,8 +19,13 @@ export default function DashboardPage() {
                                 <span className="text-sm text-gray-700">
                                     Welcome, {user?.displayName || user?.email}
                                 </span>
+                                {/* This button already exists */}
                                 <a href="/dashboard/letters/new" className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
                                     Draft New Letter
+                                </a>
+                                {/* Add this new button */}
+                                <a href="/dashboard/letters" className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm">
+                                    View Submitted Letters
                                 </a>
                                 <button
                                     onClick={signOut}

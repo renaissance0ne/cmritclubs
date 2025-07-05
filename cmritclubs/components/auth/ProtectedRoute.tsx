@@ -1,6 +1,5 @@
 'use client';
 
-// components/auth/ProtectedRoute.tsx
 import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -10,44 +9,46 @@ interface ProtectedRouteProps {
     children: React.ReactNode;
     requiredRole?: 'club_leader' | 'college_official';
     requiredStatus?: 'email_verified' | 'pending' | 'approved' | 'rejected';
+    requiredOfficialRoles?: string[]; // Added this prop
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-                                                                  children,
-                                                                  requiredRole,
-                                                                  requiredStatus,
-                                                              }) => {
+    children,
+    requiredRole,
+    requiredStatus,
+    requiredOfficialRoles, // Added this prop
+}) => {
     const { user, firebaseUser, loading } = useAuth();
     const router = useRouter();
 
     useEffect(() => {
         if (!loading) {
-            // Not authenticated at all
             if (!firebaseUser) {
                 router.push('/signin');
                 return;
             }
 
-            // Email not verified
             if (!firebaseUser.emailVerified) {
                 router.push('/verify-email');
                 return;
             }
 
-            // User data not loaded yet
             if (!user) {
                 return;
             }
 
-            // Check role requirement
             if (requiredRole && user.role !== requiredRole) {
                 router.push('/unauthorized');
                 return;
             }
 
-            // Check status requirement
+            // New check for specific official roles
+            if (requiredOfficialRoles && !requiredOfficialRoles.includes(user.officialRole || '')) {
+                router.push('/unauthorized');
+                return;
+            }
+
             if (requiredStatus && user.status !== requiredStatus) {
-                // Handle different status redirects
                 switch (user.status) {
                     case 'email_verified':
                         router.push('/application');
@@ -60,7 +61,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                         break;
                     case 'approved':
                         if (requiredStatus === 'email_verified' || requiredStatus === 'pending') {
-                            // User is approved but trying to access earlier stage
                             router.push('/dashboard');
                         }
                         break;
@@ -68,9 +68,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
                 return;
             }
         }
-    }, [loading, firebaseUser, user, requiredRole, requiredStatus, router]);
+    }, [loading, firebaseUser, user, requiredRole, requiredStatus, requiredOfficialRoles, router]);
 
-    // Show loading spinner while checking authentication
     if (loading || !firebaseUser || !user) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -79,8 +78,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         );
     }
 
-    // Show unauthorized message if role/status requirements aren't met
-    if (requiredRole && user.role !== requiredRole) {
+    if ((requiredRole && user.role !== requiredRole) || (requiredOfficialRoles && !requiredOfficialRoles.includes(user.officialRole || ''))) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">

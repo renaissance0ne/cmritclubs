@@ -2,10 +2,12 @@ import { User as FirebaseUser } from 'firebase/auth';
 
 export interface ApprovalStatus {
   director: 'pending' | 'approved' | 'rejected';
+  dsaa: 'pending' | 'approved' | 'rejected'; // Added
+  tpo: 'pending' | 'approved' | 'rejected'; // Added
   cseHod: 'pending' | 'approved' | 'rejected';
   csmHod: 'pending' | 'approved' | 'rejected';
   csdHod: 'pending' | 'approved' | 'rejected';
-  cscHod: 'pending' | 'approved' | 'rejected';
+  frshHod: 'pending' | 'approved' | 'rejected'; // Renamed
   eceHod: 'pending' | 'approved' | 'rejected';
 }
 
@@ -14,7 +16,7 @@ export interface User {
     email: string;
     displayName?: string;
     role: 'club_leader' | 'admin' | 'college_official';
-    officialRole?: 'director' | 'cse_hod' | 'csm_hod' | 'csd_hod' | 'csc_hod' | 'ece_hod';
+    officialRole?: 'director' | 'dsaa' | 'tpo' | 'cse_hod' | 'csm_hod' | 'csd_hod' | 'frsh_hod' | 'ece_hod'; // Updated
     status: 'pending' | 'email_verified' | 'approved' | 'rejected';
     rollNo?: string;
     phoneNumber?: string;

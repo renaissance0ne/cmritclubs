@@ -12,8 +12,10 @@ interface ApprovalStatus {
     cseHod: 'pending' | 'approved' | 'rejected';
     csmHod: 'pending' | 'approved' | 'rejected';
     csdHod: 'pending' | 'approved' | 'rejected';
-    cscHod: 'pending' | 'approved' | 'rejected';
+    frshHod: 'pending' | 'approved' | 'rejected';
     eceHod: 'pending' | 'approved' | 'rejected';
+    tpo: 'pending' | 'approved' | 'rejected';
+    dsaa: 'pending' | 'approved' | 'rejected';
 }
 
 interface ApplicationData {
@@ -35,12 +37,17 @@ interface ApplicationData {
 
 const officialRoles = {
     director: 'Director',
+    dsaa: 'DSAA',
+    tpo: 'TPO',
     cseHod: 'CSE HOD',
     csmHod: 'CSM HOD',
     csdHod: 'CSD HOD',
-    cscHod: 'CSC HOD',
+    frshHod: 'Freshman HOD',
     eceHod: 'ECE HOD'
-} as const;
+};
+
+// --- DYNAMIC COUNT: Get the total number of roles from the object ---
+const totalRoles = Object.keys(officialRoles).length;
 
 // --- Component ---
 export default function PendingApprovalPage() {
@@ -59,13 +66,14 @@ export default function PendingApprovalPage() {
     const fetchApplicationData = async () => {
         try {
             if (!user) return;
-           
+
             const userDoc = await getDoc(doc(db, 'users', user.uid));
             if (userDoc.exists()) {
                 const userData = userDoc.data();
                 const approvals = userData.approvals || {
-                    director: 'pending', cseHod: 'pending', csmHod: 'pending',
-                    csdHod: 'pending', cscHod: 'pending', eceHod: 'pending'
+                    director: 'pending', dsaa: 'pending', tpo: 'pending',
+                    cseHod: 'pending', csmHod: 'pending', csdHod: 'pending',
+                    frshHod: 'pending', eceHod: 'pending'
                 };
 
                 setApplicationData({
@@ -80,9 +88,9 @@ export default function PendingApprovalPage() {
                     approvals,
                     submittedAt: userData.createdAt?.toDate() || new Date(),
                     overallStatus: calculateOverallStatus(approvals),
-                    phoneNumber: userData.phoneNumber || 'Not provided', // Fixed: Changed from 'N/A' to show actual phone number
+                    phoneNumber: userData.phoneNumber || 'Not provided',
                     expectedGraduationYear: userData.expectedGraduationYear,
-                    expectedGraduationMonth: userData.expectedGraduationMonth || 'Not provided', // Changed from 'N/A'
+                    expectedGraduationMonth: userData.expectedGraduationMonth || 'Not provided',
                 });
             }
         } catch (error) {
@@ -95,8 +103,8 @@ export default function PendingApprovalPage() {
 
     const calculateOverallStatus = (approvals: ApprovalStatus): 'pending' | 'approved' | 'rejected' => {
         const statuses = Object.values(approvals);
-        if (statuses.every(status => status === 'approved')) return 'approved';
         if (statuses.some(status => status === 'rejected')) return 'rejected';
+        if (statuses.every(status => status === 'approved')) return 'approved';
         return 'pending';
     };
 
@@ -105,12 +113,14 @@ export default function PendingApprovalPage() {
         const userOfficialRole = user.officialRole;
         switch (role) {
             case 'director': return userOfficialRole === 'director';
-            case 'cseHod':   return userOfficialRole === 'cse_hod';
-            case 'csmHod':   return userOfficialRole === 'csm_hod';
-            case 'csdHod':   return userOfficialRole === 'csd_hod';
-            case 'cscHod':   return userOfficialRole === 'csc_hod';
-            case 'eceHod':   return userOfficialRole === 'ece_hod';
-            default:         return false;
+            case 'dsaa': return userOfficialRole === 'dsaa';
+            case 'tpo': return userOfficialRole === 'tpo';
+            case 'cseHod': return userOfficialRole === 'cse_hod';
+            case 'csmHod': return userOfficialRole === 'csm_hod';
+            case 'csdHod': return userOfficialRole === 'csd_hod';
+            case 'frshHod': return userOfficialRole === 'frsh_hod';
+            case 'eceHod': return userOfficialRole === 'ece_hod';
+            default: return false;
         }
     };
 
@@ -125,8 +135,8 @@ export default function PendingApprovalPage() {
                 overallStatus: newOverallStatus,
                 updatedAt: serverTimestamp()
             });
-            if (newOverallStatus === 'approved') {
-                await updateDoc(doc(db, 'users', user.uid), { status: 'approved' });
+            if (newOverallStatus === 'approved' || newOverallStatus === 'rejected') {
+                await updateDoc(doc(db, 'users', user.uid), { status: newOverallStatus });
             }
             setApplicationData(prev => prev ? { ...prev, approvals: updatedApprovals, overallStatus: newOverallStatus } : null);
         } catch (error) {
@@ -141,8 +151,8 @@ export default function PendingApprovalPage() {
         switch (status) {
             case 'approved': return 'text-green-600 bg-green-100';
             case 'rejected': return 'text-red-600 bg-red-100';
-            case 'pending':  return 'text-yellow-600 bg-yellow-100';
-            default:         return 'text-gray-600 bg-gray-100';
+            case 'pending': return 'text-yellow-600 bg-yellow-100';
+            default: return 'text-gray-600 bg-gray-100';
         }
     };
 
@@ -150,8 +160,8 @@ export default function PendingApprovalPage() {
         switch (status) {
             case 'approved': return '✓';
             case 'rejected': return '✗';
-            case 'pending':  return '⏳';
-            default:         return '?';
+            case 'pending': return '⏳';
+            default: return '?';
         }
     };
 
@@ -216,7 +226,7 @@ export default function PendingApprovalPage() {
                         <div className="px-6 py-4">
                             <div className="mb-8">
                                 <div className="flex items-center">
-                                    <span className="text-lg font-semibold mr-3 text-gray-900">Overall Status:</span> {/* Fixed: Added text-gray-900 */}
+                                    <span className="text-lg font-semibold mr-3 text-gray-900">Overall Status:</span>
                                     <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(applicationData.overallStatus)}`}>
                                         {getStatusIcon(applicationData.overallStatus)} {applicationData.overallStatus.toUpperCase()}
                                     </span>
@@ -266,7 +276,7 @@ export default function PendingApprovalPage() {
                                         const role = key as keyof ApprovalStatus;
                                         const status = applicationData.approvals[role];
                                         const canApprove = canApproveRole(role);
-                                       
+
                                         return (
                                             <div key={role} className={`p-4 border rounded-lg ${status === 'approved' ? 'border-green-200 bg-green-50' : status === 'rejected' ? 'border-red-200 bg-red-50' : 'border-gray-200'}`}>
                                                 <div className="flex items-center justify-between mb-3">
@@ -275,14 +285,14 @@ export default function PendingApprovalPage() {
                                                         {getStatusIcon(status)} {status.toUpperCase()}
                                                     </span>
                                                 </div>
-                                               
+
                                                 {canApprove && status === 'pending' && (
                                                     <div className="flex space-x-2">
                                                         <button onClick={() => handleApprovalUpdate(role, 'approved')} disabled={updating} className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50">Approve</button>
                                                         <button onClick={() => handleApprovalUpdate(role, 'rejected')} disabled={updating} className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-xs disabled:opacity-50">Reject</button>
                                                     </div>
                                                 )}
-                                               
+
                                                 {!canApprove && (
                                                     <p className="text-xs text-gray-500">
                                                         {status === 'pending' ? 'Awaiting decision' : `Decision: ${status}`}
@@ -297,12 +307,14 @@ export default function PendingApprovalPage() {
                             <div className="mt-8">
                                 <div className="flex justify-between text-sm text-gray-600 mb-2">
                                     <span>Progress</span>
-                                    <span>{Object.values(applicationData.approvals).filter(s => s === 'approved').length}/6 approvals</span>
+                                    {/* DYNAMIC COUNT: Use the totalRoles variable here */}
+                                    <span>{Object.values(applicationData.approvals).filter(s => s === 'approved').length}/{totalRoles} approvals</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
                                     <div
                                         className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                                        style={{ width: `${(Object.values(applicationData.approvals).filter(s => s === 'approved').length / 6) * 100}%` }}
+                                        // DYNAMIC COUNT: Use the totalRoles variable for the percentage calculation
+                                        style={{ width: `${(Object.values(applicationData.approvals).filter(s => s === 'approved').length / totalRoles) * 100}%` }}
                                     ></div>
                                 </div>
                             </div>

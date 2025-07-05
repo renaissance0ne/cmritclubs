@@ -16,7 +16,7 @@ export const PermissionLetterForm: React.FC = () => {
         cse: '',
         csm: '',
         csd: '',
-        csc: '',
+        frsh: '',
         ece: '',
     });
     const [loading, setLoading] = useState(false);
@@ -48,17 +48,19 @@ export const PermissionLetterForm: React.FC = () => {
                 status: 'pending',
                 approvals: {
                     director: 'pending',
+                    dsaa: 'pending',
+                    tpo: 'pending',
                     cseHod: 'pending',
                     csmHod: 'pending',
                     csdHod: 'pending',
-                    cscHod: 'pending',
+                    frshHod: 'pending',
                     eceHod: 'pending',
                 },
                 rollNoApprovals: {
                     cse: {},
                     csm: {},
                     csd: {},
-                    csc: {},
+                    frsh: {},
                     ece: {},
                 },
                 createdAt: serverTimestamp(),
@@ -110,7 +112,7 @@ export const PermissionLetterForm: React.FC = () => {
                 />
             </div>
             <div>
-                 <label htmlFor="sincerely" className="block text-sm font-medium text-black">Yours sincerely,</label>
+                <label htmlFor="sincerely" className="block text-sm font-medium text-black">Yours sincerely,</label>
                 <input
                     type="text"
                     id="sincerely"
@@ -127,19 +129,19 @@ export const PermissionLetterForm: React.FC = () => {
                     <label className="block text-sm font-medium text-black">CSE</label>
                     <textarea onChange={(e) => handleRollNoChange(e, 'cse')} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black" />
                 </div>
-                 <div>
+                <div>
                     <label className="block text-sm font-medium text-black">CSM</label>
                     <textarea onChange={(e) => handleRollNoChange(e, 'csm')} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black" />
                 </div>
-                 <div>
+                <div>
                     <label className="block text-sm font-medium text-black">CSD</label>
                     <textarea onChange={(e) => handleRollNoChange(e, 'csd')} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black" />
                 </div>
-                 <div>
-                    <label className="block text-sm font-medium text-black">CSC</label>
-                    <textarea onChange={(e) => handleRollNoChange(e, 'csc')} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black" />
+                <div>
+                    <label className="block text-sm font-medium text-black">Freshman</label>
+                    <textarea onChange={(e) => handleRollNoChange(e, 'frsh')} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black" />
                 </div>
-                 <div>
+                <div>
                     <label className="block text-sm font-medium text-black">ECE</label>
                     <textarea onChange={(e) => handleRollNoChange(e, 'ece')} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-black" />
                 </div>

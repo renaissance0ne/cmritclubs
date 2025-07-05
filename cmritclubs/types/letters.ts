@@ -12,16 +12,18 @@ export interface PermissionLetter {
         cse: string;
         csm: string;
         csd: string;
-        csc: string;
+        frsh: string; // Renamed
         ece: string;
     };
     status: 'pending' | 'approved' | 'rejected';
     approvals: {
         director: 'pending' | 'approved' | 'rejected';
+        dsaa: 'pending' | 'approved' | 'rejected'; // Added
+        tpo: 'pending' | 'approved' | 'rejected'; // Added
         cseHod: 'pending' | 'approved' | 'rejected';
         csmHod: 'pending' | 'approved' | 'rejected';
         csdHod: 'pending' | 'approved' | 'rejected';
-        cscHod: 'pending' | 'approved' | 'rejected';
+        frshHod: 'pending' | 'approved' | 'rejected'; // Renamed
         eceHod: 'pending' | 'approved' | 'rejected';
     };
     rollNoApprovals?: {

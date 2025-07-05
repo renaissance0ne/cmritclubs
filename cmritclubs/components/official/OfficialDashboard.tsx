@@ -12,8 +12,10 @@ interface ApprovalStatus {
     cseHod: 'pending' | 'approved' | 'rejected';
     csmHod: 'pending' | 'approved' | 'rejected';
     csdHod: 'pending' | 'approved' | 'rejected';
-    cscHod: 'pending' | 'approved' | 'rejected';
+    frshHod: 'pending' | 'approved' | 'rejected';
     eceHod: 'pending' | 'approved' | 'rejected';
+    tpo: 'pending' | 'approved' | 'rejected';
+    dsaa: 'pending' | 'approved' | 'rejected';
 }
 
 interface UserApplication {
@@ -54,11 +56,11 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
             try {
                 // Query users collection for club leaders with submitted applications
                 const q = query(
-                    collection(db, 'users'), 
+                    collection(db, 'users'),
                     where('role', '==', 'club_leader')
                 );
                 const querySnapshot = await getDocs(q);
-              
+
                 const fetchedApplications = querySnapshot.docs
                     .map(doc => ({ uid: doc.id, ...doc.data() } as UserApplication))
                     .filter(app => {
@@ -72,16 +74,13 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
 
                         // Initialize approvals if not present
                         const approvals = app.approvals || {
-                            director: 'pending',
-                            cseHod: 'pending',
-                            csmHod: 'pending',
-                            csdHod: 'pending',
-                            cscHod: 'pending',
-                            eceHod: 'pending'
+                            director: 'pending', dsaa: 'pending', tpo: 'pending',
+                            cseHod: 'pending', csmHod: 'pending', csdHod: 'pending',
+                            frshHod: 'pending', eceHod: 'pending'
                         };
                         const myApprovalStatus = approvals[myRole];
                         const overallStatus = app.overallStatus || calculateOverallStatus(approvals);
-                        
+
                         // Filter based on what this official wants to see
                         if (filter === 'pending') {
                             // Show applications that are pending overall AND this official hasn't decided yet
@@ -118,10 +117,12 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
         if (!user || user.role !== 'college_official') return null;
         switch (user.officialRole) {
             case 'director': return 'director';
+            case 'dsaa': return 'dsaa';
+            case 'tpo': return 'tpo';
             case 'cse_hod': return 'cseHod';
             case 'csm_hod': return 'csmHod';
             case 'csd_hod': return 'csdHod';
-            case 'csc_hod': return 'cscHod';
+            case 'frsh_hod': return 'frshHod';
             case 'ece_hod': return 'eceHod';
             default: return null;
         }
@@ -138,16 +139,13 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
 
             // Initialize approvals if not present
             const currentApprovals = application.approvals || {
-                director: 'pending',
-                cseHod: 'pending',
-                csmHod: 'pending',
-                csdHod: 'pending',
-                cscHod: 'pending',
-                eceHod: 'pending'
+                director: 'pending', dsaa: 'pending', tpo: 'pending',
+                cseHod: 'pending', csmHod: 'pending', csdHod: 'pending',
+                frshHod: 'pending', eceHod: 'pending'
             };
-            const updatedApprovals = { 
-                ...currentApprovals, 
-                [myRole]: status 
+            const updatedApprovals = {
+                ...currentApprovals,
+                [myRole]: status
             };
             const newOverallStatus = calculateOverallStatus(updatedApprovals);
 
@@ -156,7 +154,7 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                 overallStatus: newOverallStatus,
                 updatedAt: serverTimestamp()
             };
-            
+
             // If fully approved, update main status
             if (newOverallStatus === 'approved') {
                 updateData.status = 'approved';
@@ -165,14 +163,14 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
             }
 
             await updateDoc(doc(db, 'users', uid), updateData);
-            
+
             // Refetch applications to update the view
             const q = query(
-                collection(db, 'users'), 
+                collection(db, 'users'),
                 where('role', '==', 'club_leader')
             );
             const querySnapshot = await getDocs(q);
-            
+
             const fetchedApplications = querySnapshot.docs
                 .map(doc => ({ uid: doc.id, ...doc.data() } as UserApplication))
                 .filter(app => {
@@ -183,12 +181,9 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                     if (!myRole) return false;
 
                     const approvals = app.approvals || {
-                        director: 'pending',
-                        cseHod: 'pending',
-                        csmHod: 'pending',
-                        csdHod: 'pending',
-                        cscHod: 'pending',
-                        eceHod: 'pending'
+                        director: 'pending', dsaa: 'pending', tpo: 'pending',
+                        cseHod: 'pending', csmHod: 'pending', csdHod: 'pending',
+                        frshHod: 'pending', eceHod: 'pending'
                     };
 
                     const myApprovalStatus = approvals[myRole];
@@ -205,7 +200,7 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                 });
 
             setApplications(fetchedApplications);
-            
+
         } catch (error) {
             console.error('Error updating approval:', error);
         } finally {
@@ -219,16 +214,16 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
             console.log('No approval role found for user:', user?.officialRole);
             return false;
         }
-        
+
         // Initialize approvals if not present
         if (!application.approvals) {
             console.log('No approvals object found for application:', application.uid);
             return true; // Can approve if no approvals structure exists yet
         }
-        
+
         const currentStatus = application.approvals[myRole];
         console.log(`Current approval status for ${myRole}:`, currentStatus);
-        
+
         // Check if this official hasn't already approved/rejected
         return currentStatus === 'pending';
     };
@@ -244,10 +239,12 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
 
     const officialRoles = {
         director: 'Director',
+        dsaa: 'DSAA',
+        tpo: 'TPO',
         cseHod: 'CSE HOD',
         csmHod: 'CSM HOD',
         csdHod: 'CSD HOD',
-        cscHod: 'CSC HOD',
+        frshHod: 'Freshman HOD',
         eceHod: 'ECE HOD'
     };
 
@@ -261,7 +258,7 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                         Role: {user?.officialRole?.replace('_', ' ').toUpperCase()}
                     </div>
                 </div>
-                
+
                 {view === 'applications' ? (
                     loading ? (
                         <div className="flex justify-center items-center h-64">
@@ -281,7 +278,7 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                                             {(app.overallStatus || 'pending').toUpperCase()}
                                         </span>
                                     </div>
-                                    
+
                                     <div className="space-y-2 text-sm text-gray-600 mb-4">
                                         <p><strong>Applicant:</strong> {app.displayName}</p>
                                         <p><strong>Roll No:</strong> {app.rollNo}</p>
@@ -297,9 +294,9 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
 
                                     {app.letterOfProof && (
                                         <div className="mb-4">
-                                            <a 
+                                            <a
                                                 href={app.letterOfProof}
-                                                target="_blank" 
+                                                target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="text-blue-600 hover:underline text-sm"
                                             >
@@ -331,14 +328,14 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ role, view
                                     {/* Action buttons for pending applications */}
                                     {filter === 'pending' && canApproveApplication(app) && (
                                         <div className="flex space-x-2">
-                                            <button 
+                                            <button
                                                 onClick={() => handleApprovalUpdate(app.uid, 'approved')}
                                                 disabled={updating === app.uid}
                                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50"
                                             >
                                                 {updating === app.uid ? 'Approving...' : 'Approve'}
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={() => handleApprovalUpdate(app.uid, 'rejected')}
                                                 disabled={updating === app.uid}
                                                 className="flex-1 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50"
