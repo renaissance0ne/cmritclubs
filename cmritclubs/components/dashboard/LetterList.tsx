@@ -1,32 +1,24 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
 import { PermissionLetter } from '@/types/letters';
+import { LetterModal } from '@/components/common/LetterModal';
 
 interface LettersListProps {
     filter: 'pending' | 'approved' | 'rejected';
 }
 
-const officialRoles = {
-    director: 'Director',
-    dsaa: 'DSAA',
-    tpo: 'TPO',
-    cseHod: 'CSE HOD',
-    csmHod: 'CSM HOD',
-    csdHod: 'CSD HOD',
-    frshHod: 'Freshman HOD',
-    eceHod: 'ECE HOD'
-};
-
 export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
     const { user } = useAuth();
     const [letters, setLetters] = useState<PermissionLetter[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedLetter, setSelectedLetter] = useState<PermissionLetter | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const fetchLetters = async () => {
+    const fetchLetters = useCallback(async () => {
         if (!user) return;
         setLoading(true);
         try {
@@ -47,11 +39,11 @@ export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [user, filter]);
 
     useEffect(() => {
         fetchLetters();
-    }, [user, filter]);
+    }, [fetchLetters]);
 
     const handleDelete = async (letterId: string) => {
         if (!window.confirm("Are you sure you want to delete this letter?")) return;
@@ -73,6 +65,16 @@ export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
         }
     };
 
+    const handleCardClick = (letter: PermissionLetter) => {
+        setSelectedLetter(letter);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedLetter(null);
+    };
+
 
     if (loading) {
         return <div className="text-center p-10">Loading...</div>;
@@ -83,65 +85,68 @@ export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
     }
 
     return (
-        <div className="space-y-6">
-            {letters.map(letter => (
-                <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <h3 className="text-lg font-semibold text-gray-800">{letter.subject}</h3>
-                            <p className="text-sm text-gray-500 mt-1">
-                                Submitted on: {letter.createdAt?.toDate().toLocaleDateString()}
-                            </p>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(letter.status)}`}>
-                                {letter.status.toUpperCase()}
-                            </span>
-                            <button onClick={() => handleDelete(letter.id)} className="text-red-500 hover:text-red-700 text-sm p-1">
-                                Delete
-                            </button>
-                        </div>
-                    </div>
+        <div>
+            {letters.length === 0 ? (
+                <div className="text-center py-10">
+                    <p className="text-gray-500">No {filter} permission letters found.</p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {letters.map(letter => (
+                        <div
+                            key={letter.id}
+                            onClick={() => handleCardClick(letter)}
+                            className="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow border border-gray-200"
+                        >
+                            {/* Card Header */}
+                            <div className="flex justify-between items-start mb-4">
+                                <h3 className="text-lg font-bold text-gray-800 line-clamp-2">
+                                    {letter.clubName}
+                                </h3>
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(letter.status)}`}>
+                                    {letter.status.toUpperCase()}
+                                </span>
+                            </div>
 
-                    <div className="mt-4 text-sm text-gray-600">
-                        <p><strong>Sincerely:</strong> {letter.sincerely}</p>
-                    </div>
+                            {/* Subject */}
+                            <div className="mb-3">
+                                <p className="text-sm font-semibold text-gray-700 mb-1">Subject:</p>
+                                <p className="text-sm text-gray-600 line-clamp-2">{letter.subject}</p>
+                            </div>
 
-                    <div className="mt-4 pt-4 border-t">
-                        <h4 className="text-md font-semibold text-gray-700 mb-2">Approval Status</h4>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
-                            {Object.entries(letter.approvals).map(([key, status]) => (
-                                <div key={key} className="flex justify-between">
-                                    <span>{officialRoles[key as keyof typeof officialRoles]}:</span>
-                                    <span className={`font-medium ${getStatusColor(status)} px-2 rounded`}>{status}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                            {/* Date */}
+                            <div className="mb-4">
+                                <p className="text-sm font-semibold text-gray-700 mb-1">Submitted:</p>
+                                <p className="text-sm text-gray-600">
+                                    {letter.createdAt?.toDate().toLocaleDateString()}
+                                </p>
+                            </div>
 
-                    {letter.rollNoApprovals && Object.keys(letter.rollNoApprovals).length > 0 && (
-                        <div className="mt-4 pt-4 border-t">
-                            <h4 className="text-md font-semibold text-gray-700 mb-2">HOD Roll Number Approvals</h4>
-                             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                {Object.entries(letter.rollNoApprovals).map(([dept, approvals]) =>
-                                    Object.keys(approvals).length > 0 && (
-                                        <div key={dept}>
-                                            <h5 className="font-bold capitalize">{dept}</h5>
-                                            <ul className="list-disc list-inside text-xs">
-                                                {Object.entries(approvals).map(([rollNo, status]) => (
-                                                    <li key={rollNo}>
-                                                        {rollNo}: <span className={`font-semibold ${status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>{status}</span>
-                                                    </li>
-                                                ))}
-                                            </ul>
-                                        </div>
-                                    )
-                                )}
+                            {/* Actions */}
+                            <div className="flex justify-between items-center border-t pt-3">
+                                <span className="text-xs text-gray-500">Click to view details</span>
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDelete(letter.id);
+                                    }}
+                                    className="text-red-500 hover:text-red-700 text-xs px-2 py-1 rounded"
+                                >
+                                    Delete
+                                </button>
                             </div>
                         </div>
-                    )}
+                    ))}
                 </div>
-            ))}
+            )}
+
+            {/* Modal */}
+            <LetterModal
+                letter={selectedLetter}
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                isOfficialView={false}
+            />
         </div>
     );
 };

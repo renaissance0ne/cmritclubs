@@ -6,15 +6,16 @@ import { db } from '@/lib/firebase';
 import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { PermissionLetter } from '@/types/letters';
 import { ApprovalStatus } from '@/types/auth';
-
-const departmentOrder = ['cse', 'csm', 'csd', 'frsh', 'ece'];
+import { LetterModal } from '@/components/common/LetterModal';
 
 export const PermissionLettersDashboard: React.FC = () => {
     const { user } = useAuth();
     const [letters, setLetters] = useState<PermissionLetter[]>([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
+    const [filter] = useState<'pending' | 'approved' | 'rejected'>('pending');
     const [updating, setUpdating] = useState<string | null>(null);
+    const [selectedLetter, setSelectedLetter] = useState<PermissionLetter | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const getMyApprovalRole = useCallback((): keyof ApprovalStatus | null => {
         if (!user || user.role !== 'college_official') return null;
@@ -115,65 +116,87 @@ export const PermissionLettersDashboard: React.FC = () => {
         }
     };
 
+    const handleCardClick = (letter: PermissionLetter) => {
+        setSelectedLetter(letter);
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+        setSelectedLetter(null);
+    };
+
+    const getStatusColor = (status: string) => {
+        switch (status) {
+            case 'approved': return 'text-green-600 bg-green-100';
+            case 'rejected': return 'text-red-600 bg-red-100';
+            case 'pending': return 'text-yellow-600 bg-yellow-100';
+            default: return 'text-gray-600 bg-gray-100';
+        }
+    };
+
     if (loading) return <div className="text-black">Loading...</div>;
 
     return (
         <div>
-            <div className="mt-6 space-y-6">
-                {letters.length === 0 ? <p className="text-center text-black">No {filter} letters to display.</p> : letters.map(letter => (
-                    <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md text-black">
-                        <div className="text-sm mb-4 text-black">
-                            <p>To,</p>
-                            <p>The Director,</p>
-                            <p>CMR Institute of Technology</p>
-                            <p>Medchal</p>
-                        </div>
+            <div className="mt-6">
+                {letters.length === 0 ? (
+                    <p className="text-center text-black">No {filter} letters to display.</p>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {letters.map(letter => (
+                            <div
+                                key={letter.id}
+                                onClick={() => handleCardClick(letter)}
+                                className="bg-white p-6 rounded-lg shadow-md cursor-pointer hover:shadow-lg transition-shadow border border-gray-200"
+                            >
+                                {/* Card Header */}
+                                <div className="flex justify-between items-start mb-4">
+                                    <h3 className="text-lg font-bold text-gray-800 line-clamp-2">
+                                        {letter.clubName}
+                                    </h3>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(letter.status || 'pending')}`}>
+                                        {(letter.status || 'pending').toUpperCase()}
+                                    </span>
+                                </div>
 
-                        <h3 className="text-xl font-bold text-black">{letter.clubName}</h3>
-                        <p className="text-sm text-black">Submitted: {letter.createdAt?.toDate().toLocaleDateString()}</p>
-                        <p className="mt-4 text-black"><strong>Subject:</strong> {letter.subject}</p>
-                        <p className="mt-2 whitespace-pre-wrap text-black">{letter.body}</p>
-                        <p className="mt-4 text-black"><strong>Sincerely,</strong><br/>{letter.sincerely}</p>
+                                {/* Subject */}
+                                <div className="mb-3">
+                                    <p className="text-sm font-semibold text-gray-700 mb-1">Subject:</p>
+                                    <p className="text-sm text-gray-600 line-clamp-2">{letter.subject}</p>
+                                </div>
 
-                        <div className="mt-6">
-                            <h4 className="font-semibold text-black">Roll Numbers for Approval:</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mt-2">
-                                {departmentOrder.map(dept => {
-                                    const rns = letter.rollNos[dept as keyof typeof letter.rollNos];
-                                    if (!rns) return null;
-                                    return (
-                                    <div key={dept}>
-                                        <h5 className="text-sm font-bold capitalize text-black">{dept === 'frsh' ? 'Freshman' : dept}</h5>
-                                        <ul className="text-xs list-inside space-y-1 text-black">
-                                            {rns.split('\n').filter(rn => rn.trim()).map(rn => (
-                                                <li key={rn} className="flex items-center justify-between">
-                                                    <span>{rn}</span>
-                                                    {user?.officialRole === `${dept}_hod` && filter === 'pending' && (
-                                                        <div className="flex space-x-1">
-                                                            <button onClick={() => handleRollNoApproval(letter.id, dept, rn, 'approved')} disabled={updating === `${letter.id}-${rn}`} className="text-green-500 disabled:opacity-50">✓</button>
-                                                            <button onClick={() => handleRollNoApproval(letter.id, dept, rn, 'rejected')} disabled={updating === `${letter.id}-${rn}`} className="text-red-500 disabled:opacity-50">✗</button>
-                                                        </div>
-                                                    )}
-                                                    <span className={`text-xs font-semibold ${letter.rollNoApprovals?.[dept]?.[rn] === 'approved' ? 'text-green-600' : letter.rollNoApprovals?.[dept]?.[rn] === 'rejected' ? 'text-red-600' : 'text-gray-400'}`}>
-                                                        {letter.rollNoApprovals?.[dept]?.[rn] || 'Pending'}
-                                                    </span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )})}
+                                {/* Date */}
+                                <div className="mb-4">
+                                    <p className="text-sm font-semibold text-gray-700 mb-1">Submitted:</p>
+                                    <p className="text-sm text-gray-600">
+                                        {letter.createdAt?.toDate().toLocaleDateString()}
+                                    </p>
+                                </div>
+
+                                {/* Quick Status Indicator */}
+                                <div className="text-xs text-gray-500 border-t pt-3">
+                                    Click to view details
+                                </div>
                             </div>
-                        </div>
-
-                        {filter === 'pending' && !user?.officialRole?.includes('hod') && (
-                            <div className="mt-6 flex space-x-2">
-                                <button onClick={() => handleLetterApproval(letter.id, 'approved')} disabled={updating === letter.id} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50">Approve Letter</button>
-                                <button onClick={() => handleLetterApproval(letter.id, 'rejected')} disabled={updating === letter.id} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50">Reject Letter</button>
-                            </div>
-                        )}
+                        ))}
                     </div>
-                ))}
+                )}
             </div>
+
+            {/* Modal */}
+            <LetterModal
+                letter={selectedLetter}
+                isOpen={isModalOpen}
+                onClose={handleCloseModal}
+                isOfficialView={true}
+                onApprove={(letterId) => handleLetterApproval(letterId, 'approved')}
+                onReject={(letterId) => handleLetterApproval(letterId, 'rejected')}
+                onRollNoApproval={handleRollNoApproval}
+                userRole={user?.officialRole}
+                filter={filter}
+                updating={updating}
+            />
         </div>
     );
 };
