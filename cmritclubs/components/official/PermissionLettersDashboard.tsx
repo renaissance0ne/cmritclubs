@@ -119,6 +119,26 @@ export const PermissionLettersDashboard: React.FC = () => {
 
     return (
         <div>
+            <div className="mb-4 flex space-x-2">
+                <button 
+                    onClick={() => setFilter('pending')} 
+                    className={`px-3 py-2 rounded-md text-sm ${filter === 'pending' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                    Pending
+                </button>
+                <button 
+                    onClick={() => setFilter('approved')} 
+                    className={`px-3 py-2 rounded-md text-sm ${filter === 'approved' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                    Approved
+                </button>
+                <button 
+                    onClick={() => setFilter('rejected')} 
+                    className={`px-3 py-2 rounded-md text-sm ${filter === 'rejected' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`}
+                >
+                    Rejected
+                </button>
+            </div>
             <div className="mt-6 space-y-6">
                 {letters.length === 0 ? <p className="text-center text-black">No {filter} letters to display.</p> : letters.map(letter => (
                     <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md text-black">
@@ -165,7 +185,7 @@ export const PermissionLettersDashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        {filter === 'pending' && !user?.officialRole?.includes('hod') && (
+                        {filter === 'pending' && (
                             <div className="mt-6 flex space-x-2">
                                 <button onClick={() => handleLetterApproval(letter.id, 'approved')} disabled={updating === letter.id} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50">Approve Letter</button>
                                 <button onClick={() => handleLetterApproval(letter.id, 'rejected')} disabled={updating === letter.id} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-md text-sm disabled:opacity-50">Reject Letter</button>
