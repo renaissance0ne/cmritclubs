@@ -45,7 +45,10 @@ export const ourFileRouter = {
    * Accepts a single PDF file up to 4MB.
    * Requires the user to be authenticated.
    */
-  proofOfLeadership: f({ pdf: { maxFileSize: "4MB", maxFileCount: 1 } })
+  proofOfLeadership: f({
+    image: { maxFileSize: "2MB", maxFileCount: 1 },
+    pdf: { maxFileSize: "2MB", maxFileCount: 1 },
+  })
     .middleware(async ({ req }) => {
       // This code runs on your server before any upload
       const user = await getUser();
@@ -59,14 +62,14 @@ export const ourFileRouter = {
     .onUploadComplete(async ({ metadata, file }) => {
       // This code RUNS ON YOUR SERVER after upload is complete
       console.log("Proof of leadership uploaded by user:", metadata.userId);
-      console.log("File URL:", file.url);
+      console.log("File URL:", file.ufsUrl);
 
       // You can now use the file URL, for example, by updating the user's document in Firestore.
       // Note: The logic in your AuthContext already handles creating the user document.
       // You would typically pass this URL back to the client to be included in the final signup form submission.
       try {
         await db.collection("users").doc(metadata.userId).update({
-          letterOfProof: file.url,
+          letterOfProof: file.ufsUrl,
         });
         console.log("Updated user document with proof letter URL.");
       } catch (error) {
@@ -75,7 +78,7 @@ export const ourFileRouter = {
 
 
       // !!! Whatever is returned here is sent to the client-side `onClientUploadComplete` callback
-      return { uploadedBy: metadata.userId, fileUrl: file.url };
+      return { uploadedBy: metadata.userId, fileUrl: file.ufsUrl };
     }),
 
 } satisfies FileRouter;

@@ -27,7 +27,7 @@ export const SignUpForm: React.FC = () => {
     const router = useRouter();
 
     // Use UploadThing hook
-    const { startUpload, isUploading } = useUploadThing("media", {
+    const { startUpload, isUploading } = useUploadThing("proofOfLeadership", {
         onClientUploadComplete: (res) => {
             console.log("Files uploaded successfully:", res);
         },
