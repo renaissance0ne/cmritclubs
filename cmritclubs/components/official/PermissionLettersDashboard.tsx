@@ -47,7 +47,6 @@ export const PermissionLettersDashboard: React.FC = () => {
         };
         setLoading(true);
         try {
-            // Corrected query to fetch letters relevant to the official
             const q = query(
                 collection(db, 'permissionLetters'),
                 where(`approvals.${myRole}`, '==', filter)
@@ -69,11 +68,26 @@ export const PermissionLettersDashboard: React.FC = () => {
     useEffect(() => {
         fetchLetters();
     }, [fetchLetters]);
-
-    // Reset selected letter when filter changes
+    
     useEffect(() => {
         setSelectedLetter(null);
     }, [filter]);
+
+    // NEW: Function to trigger PDF generation
+    const triggerPdfGeneration = async (letterId: string) => {
+        try {
+            await fetch('/api/generate-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ letterId }),
+            });
+            console.log('PDF generation triggered for letter:', letterId);
+        } catch (error) {
+            console.error('Failed to trigger PDF generation:', error);
+        }
+    };
 
     const handleLetterApproval = async (letterId: string, newStatus: 'approved' | 'rejected') => {
         const myRole = getMyApprovalRole();
@@ -94,7 +108,12 @@ export const PermissionLettersDashboard: React.FC = () => {
                 status: newOverallStatus,
                 updatedAt: serverTimestamp()
             });
-            // Refresh list after update
+
+            // If the letter is now fully approved, trigger PDF generation
+            if (newOverallStatus === 'approved') {
+                await triggerPdfGeneration(letterId);
+            }
+
             fetchLetters();
         } catch (error) {
             console.error("Error updating letter status: ", error);
@@ -112,7 +131,6 @@ export const PermissionLettersDashboard: React.FC = () => {
                 [`rollNoApprovals.${department}.${rollNo}`]: approval,
                 updatedAt: serverTimestamp()
             });
-            // Re-fetch to show updated state
             fetchLetters();
         } catch (error) {
             console.error("Error updating roll number approval: ", error);
@@ -123,7 +141,6 @@ export const PermissionLettersDashboard: React.FC = () => {
 
     if (loading) return <div className="text-black">Loading...</div>;
 
-    // If a letter is selected, show detailed view
     if (selectedLetter) {
         const letter = letters.find(l => l.id === selectedLetter);
         if (!letter) return <div className="text-black">Letter not found</div>;
@@ -196,7 +213,6 @@ export const PermissionLettersDashboard: React.FC = () => {
         );
     }
 
-    // Grid view (default)
     return (
         <div>
             <div className="mb-4 flex space-x-2">

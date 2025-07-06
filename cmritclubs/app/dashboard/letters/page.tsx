@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/contexts/AuthContext';
 import { LettersList } from '@/components/dashboard/LetterList';
+import { ApprovedLettersList } from '@/components/dashboard/ApprovedLettersList'; 
 
 export default function LettersPage() {
     const { user } = useAuth();
@@ -36,21 +37,27 @@ export default function LettersPage() {
                             >
                                 Pending
                             </button>
+                             {/* MODIFIED: Changed 'approved' to 'finalized' for clarity */}
                             <button
                                 onClick={() => setFilter('approved')}
-                                className={`px-4 py-2 text-sm font-medium ${filter === 'approved' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px-4 py-2 text-sm font-medium ${filter === 'approved' ? 'border-b-2 border-green-500 text-green-600' : 'text-gray-500 hover:text-gray-700'}`}
                             >
-                                Approved
+                                Approved Letters (PDF)
                             </button>
                             <button
                                 onClick={() => setFilter('rejected')}
-                                className={`px-4 py-2 text-sm font-medium ${filter === 'rejected' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                className={`px-4 py-2 text-sm font-medium ${filter === 'rejected' ? 'border-b-2 border-red-500 text-red-600' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 Rejected
                             </button>
                         </div>
                         <div className="mt-6">
-                            <LettersList filter={filter} />
+                            {/* Render different component based on filter */}
+                            {filter === 'approved' ? (
+                                <ApprovedLettersList />
+                            ) : (
+                                <LettersList filter={filter} />
+                            )}
                         </div>
                     </div>
                 </main>

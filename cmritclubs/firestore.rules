@@ -49,6 +49,9 @@ service cloud.firestore {
       allow read: if request.auth != null && request.auth.uid == resource.data.uid;
       // Allow college officials to read and update all letters
       allow read, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'college_official';
+       // Allow officials to update letters, and allow server-side updates for PDF generation
+      allow update: if (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'college_official') ||
+                       (request.auth == null && request.resource.data.pdfHash != null); // Allow backend process to update with hash
     }
   }
 }

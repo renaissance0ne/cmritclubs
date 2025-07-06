@@ -12,18 +12,18 @@ export interface PermissionLetter {
         cse: string;
         csm: string;
         csd: string;
-        frsh: string; // Renamed
+        frsh: string; 
         ece: string;
     };
     status: 'pending' | 'approved' | 'rejected';
     approvals: {
         director: 'pending' | 'approved' | 'rejected';
-        dsaa: 'pending' | 'approved' | 'rejected'; // Added
-        tpo: 'pending' | 'approved' | 'rejected'; // Added
+        dsaa: 'pending' | 'approved' | 'rejected'; 
+        tpo: 'pending' | 'approved' | 'rejected'; 
         cseHod: 'pending' | 'approved' | 'rejected';
         csmHod: 'pending' | 'approved' | 'rejected';
         csdHod: 'pending' | 'approved' | 'rejected';
-        frshHod: 'pending' | 'approved' | 'rejected'; // Renamed
+        frshHod: 'pending' | 'approved' | 'rejected'; 
         eceHod: 'pending' | 'approved' | 'rejected';
     };
     rollNoApprovals?: {
@@ -33,4 +33,6 @@ export interface PermissionLetter {
     };
     createdAt: Timestamp;
     updatedAt: Timestamp;
+    generatedPdfUrl?: string;
+    pdfHash?: string;
 }
