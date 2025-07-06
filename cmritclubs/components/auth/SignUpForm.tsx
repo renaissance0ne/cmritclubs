@@ -74,8 +74,9 @@ export const SignUpForm: React.FC = () => {
                 throw new Error('Phone number is required');
             }
 
-            if (!/^\+?[\d\s-()]{10,}$/.test(phoneNumber.trim())) {
-                throw new Error('Please enter a valid phone number');
+            const cleanPhone = phoneNumber.replace(/[\s\-()]/g, ''); // Remove spaces, dashes, parentheses
+            if (!/^(\+91)?[6-9]\d{9}$/.test(cleanPhone)) {
+                throw new Error('Please enter a valid 10-digit phone number (optionally with +91 prefix)');
             }
 
             if (!department.trim()) {
