@@ -42,6 +42,7 @@ export interface AuthContextType {
     signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;
     sendEmailVerification: () => Promise<void>;
+    getToken: () => Promise<string | null>;
 }
 
 export interface ClubApplication {
