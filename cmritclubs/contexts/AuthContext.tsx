@@ -231,6 +231,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
+    const getToken = async (): Promise<string | null> => {
+        if (firebaseUser) {
+            try {
+                return await firebaseUser.getIdToken();
+            } catch (error) {
+                console.error('Error getting Firebase ID token:', error);
+                return null;
+            }
+        }
+        return null;
+    };
+
     const value: AuthContextType = {
         user,
         firebaseUser,
@@ -240,6 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithGoogle,
         signOut,
         sendEmailVerification,
+        getToken,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

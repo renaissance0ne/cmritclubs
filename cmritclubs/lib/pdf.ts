@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, StandardFonts, PDFFont, degrees } from 'pdf-lib';
+import { PDFDocument, rgb, StandardFonts, PDFFont, degrees, PageSizes } from 'pdf-lib';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
 
@@ -7,134 +7,176 @@ export function generateHash(data: Buffer): string {
     return crypto.createHash('sha256').update(data).digest('hex');
 }
 
+// Helper function to wrap long lines of text
+function wrapText(text: string, font: PDFFont, fontSize: number, maxWidth: number): string[] {
+    const words = text.replace(/\n/g, ' \n ').split(' ');
+    const lines: string[] = [];
+    let currentLine = '';
+
+    for (const word of words) {
+        if (word === '\n') {
+            lines.push(currentLine.trim());
+            currentLine = '';
+            continue;
+        }
+
+        const testLine = currentLine.length > 0 ? `${currentLine} ${word}` : word;
+        const width = font.widthOfTextAtSize(testLine, fontSize);
+
+        if (width < maxWidth) {
+            currentLine = testLine;
+        } else {
+            lines.push(currentLine.trim());
+            currentLine = word;
+        }
+    }
+
+    if (currentLine.length > 0) {
+        lines.push(currentLine.trim());
+    }
+
+    return lines;
+}
+
 // Function to create the letter PDF with security features
-export async function createSecuredPdf(letterData: any, approvedRollNos: any): Promise<{pdfBytes: Uint8Array, hash: string}> {
+export async function createSecuredPdf(letterData: any, approvedRollNos: any, verificationUrl: string): Promise<{pdfBytes: Uint8Array, hash: string}> {
     const pdfDoc = await PDFDocument.create();
-    const page = pdfDoc.addPage();
+    const page = pdfDoc.addPage(PageSizes.A4);
     const { width, height } = page.getSize();
     const font = await pdfDoc.embedFont(StandardFonts.Helvetica);
     const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+    const margin = 50;
+
+    // --- Drawing Starts Here ---
+
+    // Draw the watermark FIRST so it's in the background
+    const watermarkFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+    const watermarkText = `CMRIT-${letterData.clubName}`;
+    const watermarkOptions = {
+        font: watermarkFont,
+        size: 30, // Smaller font size
+        color: rgb(0.85, 0.85, 0.85), // Lighter color
+        opacity: 0.5,
+    };
+    // Tile the watermark across the page
+    for (let y = height; y > 0; y -= 100) {
+        for (let x = 0; x < width; x += 150) {
+             page.drawText(watermarkText, {
+                ...watermarkOptions,
+                x: x,
+                y: y,
+                rotate: degrees(-45),
+            });
+        }
+    }
 
     // 1. Club Name (Centered)
     const clubName = letterData.clubName;
     const clubNameWidth = boldFont.widthOfTextAtSize(clubName, 18);
     page.drawText(clubName, {
         x: (width - clubNameWidth) / 2,
-        y: height - 70,
+        y: height - margin,
         font: boldFont,
         size: 18,
     });
 
     // 2. QR Code and Date (Top Right)
-    const qrCodeUrl = `https://your-app-domain.com/verify-letter/${letterData.id}`; // Replace with your actual URL
-    const qrCodeImage = await QRCode.toDataURL(qrCodeUrl);
+    const qrCodeImage = await QRCode.toDataURL(verificationUrl);
     const qrCodePng = await pdfDoc.embedPng(qrCodeImage);
     page.drawImage(qrCodePng, {
-        x: width - 120,
-        y: height - 120,
+        x: width - margin - 80,
+        y: height - margin - 80,
         width: 80,
         height: 80,
     });
 
+    // Date is now below the QR code
     const date = new Date(letterData.date.seconds * 1000).toLocaleDateString();
     page.drawText(`Date: ${date}`, {
-        x: width - 150,
-        y: height - 50,
+        x: width - margin - 80, // Align with QR code
+        y: height - margin - 95, // Positioned below
         font,
         size: 12,
     });
 
-
     // 3. Recipient Address
     let yPosition = height - 150;
-    page.drawText('To,', { x: 50, y: yPosition, font, size: 12 });
+    page.drawText('To,', { x: margin, y: yPosition, font, size: 12 });
     yPosition -= 20;
-    page.drawText('The Director,', { x: 50, y: yPosition, font, size: 12 });
+    page.drawText('The Director,', { x: margin, y: yPosition, font, size: 12 });
     yPosition -= 20;
-    page.drawText('CMR Institute of Technology', { x: 50, y: yPosition, font, size: 12 });
+    page.drawText('CMR Institute of Technology', { x: margin, y: yPosition, font, size: 12 });
     yPosition -= 20;
-    page.drawText('Medchal', { x: 50, y: yPosition, font, size: 12 });
+    page.drawText('Medchal', { x: margin, y: yPosition, font, size: 12 });
 
     // 4. Subject
     yPosition -= 40;
-    page.drawText(`Subject: ${letterData.subject}`, { x: 50, y: yPosition, font: boldFont, size: 12 });
+    page.drawText(`Subject: ${letterData.subject}`, { x: margin, y: yPosition, font: boldFont, size: 12 });
 
     // 5. Body
     yPosition -= 40;
-    page.drawText('Respected Sir,', { x: 50, y: yPosition, font, size: 12 });
+    page.drawText('Respected Sir,', { x: margin, y: yPosition, font, size: 12 });
     yPosition -= 20;
     const bodyText = letterData.body;
-    // Simple line wrapping
-    const lines = bodyText.split('\n');
-    lines.forEach((line: string) => {
-        page.drawText(line, { x: 50, y: yPosition, font, size: 12 });
-        yPosition -= 15;
+    // Use the text wrapping function for the body
+    const wrappedBodyLines = wrapText(bodyText, font, 12, width - (margin * 2));
+    wrappedBodyLines.forEach((line: string) => {
+        page.drawText(line, { x: margin, y: yPosition, font, size: 12, lineHeight: 18 });
+        yPosition -= 18;
     });
 
-    // 6. Approved Roll Numbers
+    // Move Sincerely section before the Roll Numbers
     yPosition -= 20;
-    page.drawText('The following students are permitted:', { x: 50, y: yPosition, font: boldFont, size: 12 });
+    page.drawText('Yours Sincerely,', { x: margin, y: yPosition, font, size: 12 });
     yPosition -= 20;
+    page.drawText(letterData.sincerely, { x: margin, y: yPosition, font: boldFont, size: 12 });
 
+    // 6. Approved Roll Numbers (now after "Sincerely")
+    yPosition -= 40;
+    page.drawText('The following students are permitted:', { x: margin, y: yPosition, font: boldFont, size: 12 });
+    yPosition -= 20;
     Object.keys(approvedRollNos).forEach(dept => {
         if (approvedRollNos[dept].length > 0) {
-            page.drawText(`${dept.toUpperCase()}:`, { x: 70, y: yPosition, font: boldFont, size: 10 });
+            page.drawText(`${dept.toUpperCase()}:`, { x: margin + 20, y: yPosition, font: boldFont, size: 10 });
             yPosition -= 15;
-            page.drawText(approvedRollNos[dept].join(', '), { x: 90, y: yPosition, font, size: 10 });
-            yPosition -= 20;
+            // Use the wrapping function for roll numbers too, in case the list is very long
+            const rollNoLines = wrapText(approvedRollNos[dept].join(', '), font, 10, width - (margin * 2) - 40);
+            rollNoLines.forEach(line => {
+                page.drawText(line, { x: margin + 40, y: yPosition, font, size: 10, lineHeight: 14 });
+                yPosition -= 14;
+            });
+            yPosition -= 6; // Extra space between departments
         }
     });
 
-
-    // 7. Sincerely
-    yPosition -= 40;
-    page.drawText('Yours Sincerely,', { x: 50, y: yPosition, font, size: 12 });
-    yPosition -= 20;
-    page.drawText(letterData.sincerely, { x: 50, y: yPosition, font: boldFont, size: 12 });
-
-    // 8. Approval Status
+    // 7. Approval Status
     yPosition = 120;
-    page.drawText('Approval Status:', { x: 50, y: yPosition, font: boldFont, size: 12 });
+    page.drawText('Approval Status:', { x: margin, y: yPosition, font: boldFont, size: 12 });
     yPosition -= 20;
-    Object.keys(letterData.approvals).forEach(official => {
-        const status = letterData.approvals[official];
-        page.drawText(`${official.toUpperCase()}: ${status.toUpperCase()}`, { x: 70, y: yPosition, font, size: 10, color: status === 'approved' ? rgb(0, 0.5, 0) : rgb(0.5, 0, 0) });
-        yPosition -= 15;
+    // Enforce a specific display order for approvals
+    const approvalOrder = ['director', 'dsaa', 'tpo', 'cseHod', 'csmHod', 'csdHod', 'eceHod', 'frshHod'];
+    approvalOrder.forEach(officialKey => {
+        if (letterData.approvals[officialKey]) {
+            const status = letterData.approvals[officialKey];
+            const officialName = officialKey.replace('Hod', ' HOD').toUpperCase(); // Make it look nicer
+            page.drawText(`${officialName}: ${status.toUpperCase()}`, { x: margin + 20, y: yPosition, font, size: 10, color: status === 'approved' ? rgb(0, 0.5, 0) : rgb(0.5, 0, 0) });
+            yPosition -= 15;
+        }
     });
 
-
-    // Security Feature: Watermark
-    const watermarkText = `CMRIT-${letterData.clubName}`;
-    const watermarkFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
-    const watermarkOptions = {
-        font: watermarkFont,
-        size: 50,
-        color: rgb(0.75, 0.75, 0.75),
-        opacity: 0.3,
-    };
-
-    for (let i = 0; i < 5; i++) {
-        page.drawText(watermarkText, {
-            ...watermarkOptions,
-            x: 100,
-            y: height - 150 - (i * 150),
-            rotate: degrees(-45),
-        });
-    }
-
-
-    // Security Feature: Read-only permissions
+    // Set document metadata for security
     pdfDoc.setProducer('CMRIT Clubs Portal');
     pdfDoc.setCreator('CMRIT Clubs Portal');
-    // Note: pdf-lib doesn't directly support setting user permissions like no-printing.
-    // This is often handled by Adobe's proprietary security handlers.
-    // We can set metadata to indicate it's read-only. More advanced restrictions
-    // would require a different library or service.
+    pdfDoc.setTitle(`${letterData.clubName} - ${letterData.subject}`);
+    pdfDoc.setSubject('Club Activity Permission Letter');
+    pdfDoc.setKeywords(['CMRIT', 'Club', 'Permission', 'Letter']);
+    pdfDoc.setCreationDate(new Date());
+    pdfDoc.setModificationDate(new Date());
 
-    // Security Feature: Flattening (pdf-lib does this by default when saving)
+    // Save the document to get the bytes for hashing
     const pdfBytes = await pdfDoc.save();
 
-    // Security Feature: Unique Hash
+    // Generate hash from the final bytes
     const hash = generateHash(Buffer.from(pdfBytes));
 
     return { pdfBytes, hash };

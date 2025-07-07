@@ -1,20 +1,49 @@
 import { NextRequest, NextResponse } from 'next/server';
-// REMOVED: Client SDK imports
-// import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore'; 
-import { db, admin } from '@/lib/firebase-admin'; // Import admin to get serverTimestamp
+import { db, admin } from '@/lib/firebase-admin';
 import { createSecuredPdf } from '@/lib/pdf';
 import { utapi } from '@/app/api/uploadthing/core';
 import { PermissionLetter } from '@/types/letters';
+import { headers } from 'next/headers';
+
+/**
+ * @name getUserFromToken
+ * @description Authenticates the user from the Authorization header.
+ * This logic is based on your `api/uploadthing/core.ts` file.
+ * @returns The decoded user token or null.
+ */
+const getUserFromToken = async () => {
+  const authHeader = (await headers()).get("authorization");
+  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+  
+  const idToken = authHeader.split("Bearer ")[1];
+  try {
+    return await admin.auth().verifyIdToken(idToken);
+  } catch (error) {
+    console.error("Firebase token verification failed:", error);
+    return null;
+  }
+};
 
 export async function POST(req: NextRequest) {
     try {
-        const { letterId } = await req.json();
+        // Step 1: Authenticate the request
+        const user = await getUserFromToken();
+        if (!user) {
+            return NextResponse.json({ error: 'Unauthorized: You must be logged in.' }, { status: 401 });
+        }
 
+        // Step 2: Authorize the user
+        const userDoc = await db.collection('users').doc(user.uid).get();
+        if (!userDoc.exists || userDoc.data()?.role !== 'college_official') {
+            return NextResponse.json({ error: 'Forbidden: You do not have permission to perform this action.' }, { status: 403 });
+        }
+
+        const { letterId } = await req.json();
         if (!letterId) {
             return NextResponse.json({ error: 'Letter ID is required' }, { status: 400 });
         }
 
-        // 1. Fetch letter data from Firestore using Admin SDK methods
+        // Step 3: Fetch letter data
         const letterRef = db.collection('permissionLetters').doc(letterId);
         const letterSnap = await letterRef.get();
 
@@ -25,12 +54,23 @@ export async function POST(req: NextRequest) {
         const letterData = letterSnap.data() as PermissionLetter;
         letterData.id = letterSnap.id;
 
-        // Ensure the letter is actually approved
         if (letterData.status !== 'approved') {
             return NextResponse.json({ error: 'Letter is not fully approved' }, { status: 400 });
         }
+        
+        if (letterData.generatedPdfUrl) {
+            return NextResponse.json({ 
+                message: 'PDF already exists',
+                pdfUrl: letterData.generatedPdfUrl,
+                hash: letterData.pdfHash 
+            });
+        }
 
-        // 2. Filter for approved roll numbers only
+        // Step 4: Define the verification URL for the QR Code
+        // This URL points to a page on your site that can verify and display the letter.
+        const verificationUrl = `https://cmritclubs.com/verify-letter?id=${letterId}`;
+
+        // Step 5: Filter approved roll numbers
         const approvedRollNos: { [key: string]: string[] } = {};
         if (letterData.rollNoApprovals) {
             for (const dept in letterData.rollNoApprovals) {
@@ -43,32 +83,35 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // 3. Generate the secured PDF
-        const { pdfBytes, hash } = await createSecuredPdf(letterData, approvedRollNos);
+        // Step 6: Generate the final PDF with the verification URL in the QR code
+        const { pdfBytes, hash } = await createSecuredPdf(letterData, approvedRollNos, verificationUrl);
 
-        // 4. Upload the PDF to UploadThing from the server
-        const pdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+        // Step 7: Upload the final PDF to UploadThing
         const fileName = `PermissionLetter_${letterId}_${Date.now()}.pdf`;
-        
-        // Use the UTApi to upload the file
-        const uploadResult = await utapi.uploadFiles(new File([pdfBlob], fileName));
+        const finalUpload = await utapi.uploadFiles([new File([new Blob([pdfBytes], {type: 'application/pdf'})], fileName)]);
 
-        if (!uploadResult.data) {
-             throw new Error('Failed to upload PDF to UploadThing');
+        // FIX: The result from uploadFiles is an array. We must access the first element.
+        const uploadResult = finalUpload[0];
+
+        // Check if the upload itself resulted in an error.
+        if (uploadResult.error) {
+            console.error("UploadThing Error:", uploadResult.error);
+            throw new Error(`UploadThing error: ${uploadResult.error.message}`);
         }
+        
+        // The 'data' property contains the file details, including the URL.
+        const finalPdfUrl = uploadResult.data.url;
 
-        const generatedPdfUrl = uploadResult.data.url;
-
-        // 5. Update the Firestore document with the PDF URL and hash using Admin SDK methods
+        // Step 8: Update the Firestore document with the final URL and hash
         await letterRef.update({
-            generatedPdfUrl: generatedPdfUrl,
+            generatedPdfUrl: finalPdfUrl,
             pdfHash: hash,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp() // Use Admin SDK serverTimestamp
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
         return NextResponse.json({
             message: 'PDF generated and stored successfully',
-            pdfUrl: generatedPdfUrl,
+            pdfUrl: finalPdfUrl,
             hash: hash
         });
 
