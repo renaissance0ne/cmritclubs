@@ -49,7 +49,7 @@ export const ourFileRouter = {
     image: { maxFileSize: "2MB", maxFileCount: 1 },
     pdf: { maxFileSize: "2MB", maxFileCount: 1 },
   })
-    .middleware(async ({ req }) => {
+    .middleware(async () => {
       // This code runs on your server before any upload
       const user = await getUser();
 
