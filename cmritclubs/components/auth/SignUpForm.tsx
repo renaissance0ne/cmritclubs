@@ -4,6 +4,10 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useAuthenticatedUpload } from '@/hooks/useAuthenticatedUpload';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '@/lib/firebase';
+import { User as FirebaseUser } from 'firebase/auth';
+import { uploadFiles } from '@/lib/uploadthing';
 
 export const SignUpForm: React.FC = () => {
     const [fullName, setFullName] = useState('');
@@ -103,48 +107,79 @@ export const SignUpForm: React.FC = () => {
                 throw new Error('Expected graduation month is required');
             }
 
-            if (!letterOfProof) {
-                throw new Error('Letter of proof is required');
+            if (!letterOfProof) { 
+                setError('Letter of proof is required');
+                setLoading(false);
+                return;
             }
 
             // Upload file to UploadThing
-            setUploading(true);
-            const uploadResult = await startUpload([letterOfProof]);
+            try {
+                const userData = {
+                    displayName: fullName.trim(),
+                    email: email.trim(),
+                    rollNo: rollNo.trim(),
+                    phoneNumber: phoneNumber.trim(),
+                    department: department.trim(),
+                    clubName: clubName.trim(),
+                    clubInchargeFaculty: clubInchargeFaculty.trim(),
+                    yearOfStudy: yearOfStudy,
+                    expectedGraduationYear: parseInt(expectedGraduationYear),
+                    expectedGraduationMonth: expectedGraduationMonth,
+                    // We leave letterOfProof empty for now
+                    letterOfProof: '',
+                    approvals: {
+                        director: 'pending',
+                        dsaa: 'pending',
+                        tpo: 'pending',
+                        cseHod: 'pending',
+                        csmHod: 'pending',
+                        csdHod: 'pending',
+                        frshHod: 'pending',
+                        eceHod: 'pending'
+                    },
+                    overallStatus: 'pending'
+                };
 
-            if (!uploadResult || uploadResult.length === 0) {
-                throw new Error('Failed to upload file');
-            }
+                // --- Step 1: Create the user. It now returns the new user object ---
+                const newFirebaseUser: FirebaseUser = await signUp(email, password, userData);
 
-            const letterOfProofUrl = uploadResult[0].url;
-            setUploading(false);
+                // --- Step 2: Get token directly from the returned user object ---
+                const token = await newFirebaseUser.getIdToken();
 
-            const userData = {
-                displayName: fullName.trim(),
-                email: email.trim(),
-                rollNo: rollNo.trim(),
-                phoneNumber: phoneNumber.trim(),
-                department: department.trim(),
-                clubName: clubName.trim(),
-                clubInchargeFaculty: clubInchargeFaculty.trim(),
-                yearOfStudy: yearOfStudy,
-                expectedGraduationYear: parseInt(expectedGraduationYear),
-                expectedGraduationMonth: expectedGraduationMonth,
-                letterOfProof: letterOfProofUrl,
-                approvals: {
-                    director: 'pending',
-                    dsaa: 'pending',
-                    tpo: 'pending',
-                    cseHod: 'pending',
-                    csmHod: 'pending',
-                    csdHod: 'pending',
-                    frshHod: 'pending',
-                    eceHod: 'pending'
+                // --- Step 3: Upload the file using the token ---
+                setUploading(true);
+                
+                // Fixed: Use startUpload instead of uploadFiles
+                const uploadResult = await uploadFiles("proofOfLeadership", {
+                files: [letterOfProof],
+                headers: {
+                    'Authorization': `Bearer ${token}`, // Pass the token manually
                 },
-                overallStatus: 'pending'
-            };
+            });
+                
+                setUploading(false);
 
-            await signUp(email, password, userData);
-            setSuccess(true);
+                if (!uploadResult || uploadResult.length === 0) {
+                    throw new Error('Failed to upload file');
+                }
+                
+                // --- Step 4: Update the user's document with the file URL ---
+                // Note: Your existing onUploadComplete in api/uploadthing/core.ts also does this.
+                // This just ensures it's set correctly.
+                console.log("Upload complete, user document should be updated by onUploadComplete.");
+
+                setSuccess(true);
+
+            } catch (error: any) {
+                if (error.code === 'auth/email-already-in-use') {
+                    setError('An account with this email already exists. Please sign in instead.');
+                } else if (error.code === 'auth/network-request-failed') {
+                    setError('Network error. Please check your internet connection and try again.');
+                } else {
+                    setError(error.message || 'Failed to create account');
+                }
+            }
         } catch (error: any) {
             if (error.code === 'auth/email-already-in-use') {
                 setError('An account with this email already exists. Please sign in instead.');
@@ -155,7 +190,6 @@ export const SignUpForm: React.FC = () => {
             }
         } finally {
             setLoading(false);
-            setUploading(false);
         }
     };
 

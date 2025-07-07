@@ -77,30 +77,14 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ view }) =>
             try {
                 const q = query(
                     collection(db, 'users'),
-                    where('role', '==', 'club_leader')
+                    where('role', '==', 'club_leader'),
+                    where('overallStatus', '==', filter)
                 );
                 const querySnapshot = await getDocs(q);
 
                 const fetchedApplications = querySnapshot.docs
                     .map(doc => ({ uid: doc.id, ...doc.data() } as UserApplication))
-                    .filter(app => app.clubName && app.displayName && app.rollNo)
-                    .filter(app => {
-                        const myRole = getMyApprovalRole();
-                        if (!myRole) return false;
-
-                        const approvals = app.approvals || {
-                            director: 'pending', dsaa: 'pending', tpo: 'pending',
-                            cseHod: 'pending', csmHod: 'pending', csdHod: 'pending',
-                            frshHod: 'pending', eceHod: 'pending'
-                        };
-                        const myApprovalStatus = approvals[myRole];
-                        
-                        if (filter === 'pending') {
-                            return myApprovalStatus === 'pending';
-                        } else {
-                            return myApprovalStatus === filter;
-                        }
-                    });
+                    .filter(app => app.clubName && app.displayName && app.rollNo);
 
                 setApplications(fetchedApplications);
             } catch (error) {
@@ -252,7 +236,7 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ view }) =>
                                         </div>
                                     )}
 
-                                    {filter === 'pending' && (
+                                    {filter === 'pending' && getMyApprovalRole() && app.approvals[getMyApprovalRole()!] === 'pending' && (
                                         <div className="flex space-x-2">
                                             <button
                                                 onClick={() => handleApprovalUpdate(app.uid, 'approved')}

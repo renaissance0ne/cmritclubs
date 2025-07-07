@@ -122,41 +122,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
     };
 
-    const signUp = async (email: string, password: string, userData?: any) => {
-        try {
-            const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password);
+    const signUp = async (email: string, password: string, userData?: any): Promise<FirebaseUser> => { // Return FirebaseUser
+    try {
+        const { user: firebaseUser } = await createUserWithEmailAndPassword(auth, email, password); // [cite: 140]
+        await firebaseSendEmailVerification(firebaseUser); // [cite: 141]
+        
+        const newUser = {
+            uid: firebaseUser.uid, // [cite: 142]
+            email: firebaseUser.email!, // [cite: 142]
+            displayName: userData?.displayName || firebaseUser.displayName || '', // [cite: 142-143]
+            role: 'club_leader', // [cite: 143]
+            status: 'pending', // [cite: 143]
+            // ... all other userData fields
+            rollNo: userData?.rollNo || '', // [cite: 143-144]
+            department: userData?.department || '', // [cite: 144-145]
+            clubName: userData?.clubName || '', // [cite: 145]
+            clubInchargeFaculty: userData?.clubInchargeFaculty || '', // [cite: 146]
+            yearOfStudy: userData?.yearOfStudy || '', // [cite: 147]
+            letterOfProof: userData?.letterOfProof || '', // [cite: 148]
+            phoneNumber: userData?.phoneNumber || '', // [cite: 149]
+            expectedGraduationYear: userData?.expectedGraduationYear || null, // [cite: 150-151]
+            expectedGraduationMonth: userData?.expectedGraduationMonth || '', // [cite: 151-152]
+            createdAt: serverTimestamp(), // [cite: 152]
+            updatedAt: serverTimestamp(), // [cite: 152]
+        };
+        await setDoc(doc(db, 'users', firebaseUser.uid), newUser); // [cite: 153]
 
-            // Send email verification
-            await firebaseSendEmailVerification(firebaseUser);
+        return firebaseUser; // <-- Return the user object
 
-            // Create user document in Firestore with additional fields
-            const newUser = {
-                uid: firebaseUser.uid,
-                email: firebaseUser.email!,
-                displayName: userData?.displayName || firebaseUser.displayName || '',
-                role: 'club_leader',
-                status: 'pending',
-                // Additional fields from form
-                rollNo: userData?.rollNo || '',
-                department: userData?.department || '',
-                clubName: userData?.clubName || '',
-                clubInchargeFaculty: userData?.clubInchargeFaculty || '',
-                yearOfStudy: userData?.yearOfStudy || '',
-                letterOfProof: userData?.letterOfProof || '',
-                phoneNumber: userData?.phoneNumber || '',
-                expectedGraduationYear: userData?.expectedGraduationYear || null,
-                expectedGraduationMonth: userData?.expectedGraduationMonth || '',
-                createdAt: serverTimestamp(),
-                updatedAt: serverTimestamp(),
-            };
-
-            await setDoc(doc(db, 'users', firebaseUser.uid), newUser);
-
-        } catch (error) {
-            console.error('Error signing up:', error);
-            throw error;
-        }
-    };
+    } catch (error) {
+        console.error('Error signing up:', error); // [cite: 153]
+        throw error; // [cite: 154]
+    }
+};
 
     const signIn = async (email: string, password: string) => {
         try {

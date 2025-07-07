@@ -10,7 +10,7 @@ import { ApprovalStatus } from '@/types/auth';
 const departmentOrder = ['cse', 'csm', 'csd', 'frsh', 'ece'];
 
 export const PermissionLettersDashboard: React.FC = () => {
-    const { user } = useAuth();
+    const { user, getToken } = useAuth();
     const [letters, setLetters] = useState<PermissionLetter[]>([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'pending' | 'approved' | 'rejected'>('pending');
@@ -32,7 +32,7 @@ export const PermissionLettersDashboard: React.FC = () => {
         }
     }, [user]);
 
-    const calculateOverallStatus = (approvals: ApprovalStatus): 'pending' | 'approved' | 'rejected' => {
+    const calculateOverallStatus = (approvals: any): 'pending' | 'approved' | 'rejected' => {
         const statuses = Object.values(approvals);
         if (statuses.some(status => status === 'rejected')) return 'rejected';
         if (statuses.every(status => status === 'approved')) return 'approved';
@@ -73,16 +73,27 @@ export const PermissionLettersDashboard: React.FC = () => {
         setSelectedLetter(null);
     }, [filter]);
 
-    // NEW: Function to trigger PDF generation
     const triggerPdfGeneration = async (letterId: string) => {
         try {
-            await fetch('/api/generate-pdf', {
+            const token = await getToken();
+            if (!token) {
+                console.error("Authentication token not found. Cannot generate PDF.");
+                return;
+            }
+            const response = await fetch('/api/generate-pdf', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: JSON.stringify({ letterId }),
             });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'PDF generation failed');
+            }
+
             console.log('PDF generation triggered for letter:', letterId);
         } catch (error) {
             console.error('Failed to trigger PDF generation:', error);

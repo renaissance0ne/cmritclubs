@@ -51,7 +51,7 @@ const totalRoles = Object.keys(officialRoles).length;
 
 // --- Component ---
 export default function PendingApprovalPage() {
-    const { user } = useAuth();
+    const { user, signOut } = useAuth();
     const [applicationData, setApplicationData] = useState<ApplicationData | null>(null);
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
@@ -198,10 +198,10 @@ export default function PendingApprovalPage() {
                                     Welcome, {user?.displayName || user?.email}
                                 </span>
                                 <button
-                                    onClick={() => window.location.href = '/'}
-                                    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                                    onClick={signOut}
+                                    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm"
                                 >
-                                    Back to Home
+                                    Sign Out
                                 </button>
                             </div>
                         </div>

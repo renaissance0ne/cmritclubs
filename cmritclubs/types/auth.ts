@@ -37,7 +37,7 @@ export interface AuthContextType {
     user: User | null;
     firebaseUser: FirebaseUser | null;
     loading: boolean;
-    signUp: (email: string, password: string, userData?: any) => Promise<void>;
+    signUp: (email: string, password: string, userData?: any) => Promise<FirebaseUser>; // Changed to return FirebaseUser
     signIn: (email: string, password: string) => Promise<void>;
     signInWithGoogle: () => Promise<void>;
     signOut: () => Promise<void>;

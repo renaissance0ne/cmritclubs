@@ -75,7 +75,7 @@ export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
 
 
     if (loading) {
-        return <div className="text-center p-10">Loading...</div>;
+        return <div className="text-center p-10 text-black">Loading...</div>;
     }
 
     if (letters.length === 0) {
@@ -85,11 +85,11 @@ export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
     return (
         <div className="space-y-6">
             {letters.map(letter => (
-                <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md">
+                <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md text-black">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800">{letter.subject}</h3>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <h3 className="text-lg font-semibold text-black">{letter.subject}</h3>
+                            <p className="text-sm text-gray-600 mt-1">
                                 Submitted on: {letter.createdAt?.toDate().toLocaleDateString()}
                             </p>
                         </div>
@@ -103,16 +103,16 @@ export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
                         </div>
                     </div>
 
-                    <div className="mt-4 text-sm text-gray-600">
+                    <div className="mt-4 text-sm text-black">
                         <p><strong>Sincerely:</strong> {letter.sincerely}</p>
                     </div>
 
                     <div className="mt-4 pt-4 border-t">
-                        <h4 className="text-md font-semibold text-gray-700 mb-2">Approval Status</h4>
+                        <h4 className="text-md font-semibold text-black mb-2">Approval Status</h4>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-2 text-sm">
                             {Object.entries(letter.approvals).map(([key, status]) => (
                                 <div key={key} className="flex justify-between">
-                                    <span>{officialRoles[key as keyof typeof officialRoles]}:</span>
+                                    <span className="text-black">{officialRoles[key as keyof typeof officialRoles]}:</span>
                                     <span className={`font-medium ${getStatusColor(status)} px-2 rounded`}>{status}</span>
                                 </div>
                             ))}
@@ -121,13 +121,13 @@ export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
 
                     {letter.rollNoApprovals && Object.keys(letter.rollNoApprovals).length > 0 && (
                         <div className="mt-4 pt-4 border-t">
-                            <h4 className="text-md font-semibold text-gray-700 mb-2">HOD Roll Number Approvals</h4>
+                            <h4 className="text-md font-semibold text-black mb-2">HOD Roll Number Approvals</h4>
                              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                                 {Object.entries(letter.rollNoApprovals).map(([dept, approvals]) =>
                                     Object.keys(approvals).length > 0 && (
                                         <div key={dept}>
-                                            <h5 className="font-bold capitalize">{dept}</h5>
-                                            <ul className="list-disc list-inside text-xs">
+                                            <h5 className="font-bold capitalize text-black">{dept}</h5>
+                                            <ul className="list-disc list-inside text-xs text-black">
                                                 {Object.entries(approvals).map(([rollNo, status]) => (
                                                     <li key={rollNo}>
                                                         {rollNo}: <span className={`font-semibold ${status === 'approved' ? 'text-green-600' : 'text-red-600'}`}>{status}</span>

@@ -41,7 +41,7 @@ export const ApprovedLettersList: React.FC = () => {
     }, [user]);
 
     if (loading) {
-        return <div className="text-center p-10">Loading approved letters...</div>;
+        return <div className="text-center p-10 text-black">Loading approved letters...</div>;
     }
 
     if (letters.length === 0) {
@@ -51,14 +51,14 @@ export const ApprovedLettersList: React.FC = () => {
     return (
         <div className="space-y-6">
             {letters.map(letter => (
-                <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md">
+                <div key={letter.id} className="bg-white p-6 rounded-lg shadow-md text-black">
                     <div className="flex justify-between items-start">
                         <div>
-                            <h3 className="text-lg font-semibold text-gray-800">{letter.subject}</h3>
-                            <p className="text-sm text-gray-500 mt-1">
+                            <h3 className="text-lg font-semibold text-black">{letter.subject}</h3>
+                            <p className="text-sm text-gray-600 mt-1">
                                 Approved on: {letter.updatedAt?.toDate().toLocaleDateString()}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-gray-500 mt-1">
                                 Hash: {letter.pdfHash?.substring(0, 12)}...
                             </p>
                         </div>
