@@ -4,73 +4,64 @@ import { createSecuredPdf } from '@/lib/pdf';
 import { utapi } from '@/app/api/uploadthing/core';
 import { PermissionLetter } from '@/types/letters';
 import { headers } from 'next/headers';
-import { PDFDocument, PDFName, PDFNumber, PDFDict, PDFRef } from 'pdf-lib';
+import { PDFDocument } from 'pdf-lib';
 
-/**
- * @name getUserFromToken
- * @description Authenticates the user from the Authorization header.
- * This logic is based on your `api/uploadthing/core.ts` file.
- * @returns The decoded user token or null.
- */
+// --- Imports for QPDF Integration ---
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import { promises as fs } from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+import os from 'os';
+
+// Promisify execFile to use it with async/await
+const execFileAsync = promisify(execFile);
+
+// (The getUserFromToken function remains the same)
 const getUserFromToken = async () => {
-  const authHeader = (await headers()).get("authorization");
-  if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
-  
-  const idToken = authHeader.split("Bearer ")[1];
-  try {
-    return await admin.auth().verifyIdToken(idToken);
-  } catch (error) {
-    console.error("Firebase token verification failed:", error);
-    return null;
-  }
+    const authHeader = (await headers()).get("authorization");
+    if (!authHeader || !authHeader.startsWith("Bearer ")) return null;
+
+    const idToken = authHeader.split("Bearer ")[1];
+    try {
+        return await admin.auth().verifyIdToken(idToken);
+    } catch (error) {
+        console.error("Firebase token verification failed:", error);
+        return null;
+    }
 };
 
-/**
- * @name applyPDFSecurity
- * @description Applies security restrictions to the PDF - only allows printing
- * @param pdfBytes The PDF bytes to secure
- * @returns The secured PDF bytes
- */
-async function applyPDFSecurity(pdfBytes: Uint8Array): Promise<Uint8Array> {
-  try {
-    const pdfDoc = await PDFDocument.load(pdfBytes);
-    
-    // Flatten the PDF (remove form fields and make content non-editable)
-    const form = pdfDoc.getForm();
+// (The flattenPdf function remains a good step to have before encryption)
+async function flattenPdf(pdfBytes: Uint8Array): Promise<Uint8Array> {
     try {
-      // Flatten all form fields
-      form.flatten();
+        const pdfDoc = await PDFDocument.load(pdfBytes);
+        const form = pdfDoc.getForm();
+        if (form.getFields().length > 0) {
+            form.flatten();
+        }
+        return await pdfDoc.save();
     } catch (error) {
-      // If no form fields exist, continue
-      console.log('No form fields to flatten');
+        console.error('Error applying PDF flattening:', error);
+        return pdfBytes;
     }
-    
-    // Save the flattened PDF
-    const securedPdfBytes = await pdfDoc.save({
-      useObjectStreams: false,
-      addDefaultPage: false,
-    });
-    
-    return securedPdfBytes;
-  } catch (error) {
-    console.error('Error applying PDF security:', error);
-    // If security application fails, return the original PDF
-    return pdfBytes;
-  }
 }
 
 export async function POST(req: NextRequest) {
+    const tempId = crypto.randomBytes(12).toString('hex');
+    // --- Use os.tmpdir() to get the correct temp directory for any OS ---
+    const tempDirectory = os.tmpdir(); // <--- 2. GET THE OS-SPECIFIC TEMP DIRECTORY
+    const tempInputPath = path.join(tempDirectory, `unsecured_${tempId}.pdf`);
+    const tempOutputPath = path.join(tempDirectory, `secured_${tempId}.pdf`);
+
     try {
-        // Step 1: Authenticate the request
+        // Step 1 & 2: Authenticate & Authorize User
         const user = await getUserFromToken();
         if (!user) {
-            return NextResponse.json({ error: 'Unauthorized: You must be logged in.' }, { status: 401 });
+            return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
         }
-
-        // Step 2: Authorize the user
         const userDoc = await db.collection('users').doc(user.uid).get();
         if (!userDoc.exists || userDoc.data()?.role !== 'college_official') {
-            return NextResponse.json({ error: 'Forbidden: You do not have permission to perform this action.' }, { status: 403 });
+            return NextResponse.json({ error: 'Forbidden.' }, { status: 403 });
         }
 
         const { letterId } = await req.json();
@@ -81,82 +72,93 @@ export async function POST(req: NextRequest) {
         // Step 3: Fetch letter data
         const letterRef = db.collection('permissionLetters').doc(letterId);
         const letterSnap = await letterRef.get();
-
         if (!letterSnap.exists) {
             return NextResponse.json({ error: 'Letter not found' }, { status: 404 });
         }
-
         const letterData = letterSnap.data() as PermissionLetter;
-        letterData.id = letterSnap.id;
-
         if (letterData.status !== 'approved') {
             return NextResponse.json({ error: 'Letter is not fully approved' }, { status: 400 });
         }
-        
         if (letterData.generatedPdfUrl) {
-            return NextResponse.json({ 
-                message: 'PDF already exists',
-                pdfUrl: letterData.generatedPdfUrl,
-                hash: letterData.pdfHash 
-            });
+            return NextResponse.json({ message: 'PDF already exists', pdfUrl: letterData.generatedPdfUrl, hash: letterData.pdfHash });
         }
 
-        // Step 4: Define the verification URL for the QR Code
-        // This URL points to a page on your site that can verify and display the letter.
-        const verificationUrl = `https://cmritclubs.com/verify-letter?id=${letterId}`;
-
-        // Step 5: Filter approved roll numbers
+        // Step 4 & 5: Prepare data for PDF generation
+        const verificationUrl = `https://owj6bumfwr.ufs.sh/f/${letterId}`;
         const approvedRollNos: { [key: string]: string[] } = {};
         if (letterData.rollNoApprovals) {
             for (const dept in letterData.rollNoApprovals) {
-                approvedRollNos[dept] = [];
-                for (const rollNo in letterData.rollNoApprovals[dept]) {
-                    if (letterData.rollNoApprovals[dept][rollNo] === 'approved') {
-                        approvedRollNos[dept].push(rollNo);
-                    }
-                }
+                approvedRollNos[dept] = Object.keys(letterData.rollNoApprovals[dept]).filter(
+                    rollNo => letterData.rollNoApprovals![dept][rollNo] === 'approved'
+                );
             }
         }
 
-        // Step 6: Generate the initial PDF with the verification URL in the QR code
+        // Step 6: Generate and flatten the initial PDF
         const { pdfBytes, hash } = await createSecuredPdf(letterData, approvedRollNos, verificationUrl);
+        const flattenedPdfBytes = await flattenPdf(pdfBytes);
 
-        // Step 7: Apply security restrictions and flatten the PDF
-        const securedPdfBytes = await applyPDFSecurity(pdfBytes);
+        // --- Step 7: Apply QPDF Security ---
+        const ownerPassword = crypto.randomBytes(16).toString('hex');
 
-        // Step 8: Upload the secured PDF to UploadThing
-        const fileName = `PermissionLetter_${letterId}_${Date.now()}.pdf`;
-        const finalUpload = await utapi.uploadFiles([new File([new Blob([securedPdfBytes], {type: 'application/pdf'})], fileName)]);
+        // 7a. Write to the OS's temp directory
+        await fs.writeFile(tempInputPath, flattenedPdfBytes);
 
-        // FIX: The result from uploadFiles is an array. We must access the first element.
-        const uploadResult = finalUpload[0];
+        // 7b. Execute qpdf
+        await execFileAsync('qpdf', [
+  tempInputPath,
+  tempOutputPath,
+  '--encrypt', '', ownerPassword, '256',
+  '--print=full',
+  '--modify=none',
+  '--extract=n',
+  '--cleartext-metadata',
+  '--'
+]);
 
-        // Check if the upload itself resulted in an error.
+
+
+
+        // 7c. Read the secured PDF
+        const securedPdfBytes = await fs.readFile(tempOutputPath);
+
+        // Step 8: Upload to UploadThing
+        const fileName = `PermissionLetter_${letterId}.pdf`;
+        const uploadResponse = await utapi.uploadFiles([new File([securedPdfBytes], fileName)]);
+
+        const uploadResult = uploadResponse[0];
         if (uploadResult.error) {
-            console.error("UploadThing Error:", uploadResult.error);
             throw new Error(`UploadThing error: ${uploadResult.error.message}`);
         }
-        
-        // The 'data' property contains the file details, including the URL.
         const finalPdfUrl = uploadResult.data.url;
 
-        // Step 9: Update the Firestore document with the final URL and hash
+        // Step 9: Update Firestore
         await letterRef.update({
             generatedPdfUrl: finalPdfUrl,
             pdfHash: hash,
-            isSecured: true, // Flag to indicate this PDF has security restrictions
+            isSecured: true,
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
         return NextResponse.json({
             message: 'Secured PDF generated and stored successfully',
             pdfUrl: finalPdfUrl,
-            hash: hash,
-            isSecured: true
+            hash: hash
         });
 
     } catch (error: any) {
         console.error('PDF Generation Error:', error);
-        return NextResponse.json({ error: 'Failed to generate PDF', details: error.message }, { status: 500 });
+        // Note: The error object from your log is now in the 'details' field
+        return NextResponse.json({ error: 'Failed to generate PDF', details: error }, { status: 500 });
+    } finally {
+        // --- Step 10: Cleanup ---
+        try {
+            await fs.unlink(tempInputPath);
+            await fs.unlink(tempOutputPath);
+        } catch (cleanupError: any) {
+            if (cleanupError.code !== 'ENOENT') {
+                console.error('Failed to cleanup temporary PDF files:', cleanupError);
+            }
+        }
     }
 }
