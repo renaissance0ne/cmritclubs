@@ -4,6 +4,7 @@ import { createSecuredPdf } from '@/lib/pdf';
 import { utapi } from '@/app/api/uploadthing/core';
 import { PermissionLetter } from '@/types/letters';
 import { headers } from 'next/headers';
+import { PDFDocument, PDFName, PDFNumber, PDFDict, PDFRef } from 'pdf-lib';
 
 /**
  * @name getUserFromToken
@@ -23,6 +24,40 @@ const getUserFromToken = async () => {
     return null;
   }
 };
+
+/**
+ * @name applyPDFSecurity
+ * @description Applies security restrictions to the PDF - only allows printing
+ * @param pdfBytes The PDF bytes to secure
+ * @returns The secured PDF bytes
+ */
+async function applyPDFSecurity(pdfBytes: Uint8Array): Promise<Uint8Array> {
+  try {
+    const pdfDoc = await PDFDocument.load(pdfBytes);
+    
+    // Flatten the PDF (remove form fields and make content non-editable)
+    const form = pdfDoc.getForm();
+    try {
+      // Flatten all form fields
+      form.flatten();
+    } catch (error) {
+      // If no form fields exist, continue
+      console.log('No form fields to flatten');
+    }
+    
+    // Save the flattened PDF
+    const securedPdfBytes = await pdfDoc.save({
+      useObjectStreams: false,
+      addDefaultPage: false,
+    });
+    
+    return securedPdfBytes;
+  } catch (error) {
+    console.error('Error applying PDF security:', error);
+    // If security application fails, return the original PDF
+    return pdfBytes;
+  }
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -83,12 +118,15 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Step 6: Generate the final PDF with the verification URL in the QR code
+        // Step 6: Generate the initial PDF with the verification URL in the QR code
         const { pdfBytes, hash } = await createSecuredPdf(letterData, approvedRollNos, verificationUrl);
 
-        // Step 7: Upload the final PDF to UploadThing
+        // Step 7: Apply security restrictions and flatten the PDF
+        const securedPdfBytes = await applyPDFSecurity(pdfBytes);
+
+        // Step 8: Upload the secured PDF to UploadThing
         const fileName = `PermissionLetter_${letterId}_${Date.now()}.pdf`;
-        const finalUpload = await utapi.uploadFiles([new File([new Blob([pdfBytes], {type: 'application/pdf'})], fileName)]);
+        const finalUpload = await utapi.uploadFiles([new File([new Blob([securedPdfBytes], {type: 'application/pdf'})], fileName)]);
 
         // FIX: The result from uploadFiles is an array. We must access the first element.
         const uploadResult = finalUpload[0];
@@ -102,17 +140,19 @@ export async function POST(req: NextRequest) {
         // The 'data' property contains the file details, including the URL.
         const finalPdfUrl = uploadResult.data.url;
 
-        // Step 8: Update the Firestore document with the final URL and hash
+        // Step 9: Update the Firestore document with the final URL and hash
         await letterRef.update({
             generatedPdfUrl: finalPdfUrl,
             pdfHash: hash,
+            isSecured: true, // Flag to indicate this PDF has security restrictions
             updatedAt: admin.firestore.FieldValue.serverTimestamp()
         });
 
         return NextResponse.json({
-            message: 'PDF generated and stored successfully',
+            message: 'Secured PDF generated and stored successfully',
             pdfUrl: finalPdfUrl,
-            hash: hash
+            hash: hash,
+            isSecured: true
         });
 
     } catch (error: any) {

@@ -131,36 +131,45 @@ export async function createSecuredPdf(letterData: any, approvedRollNos: any, ve
     yPosition -= 20;
     page.drawText(letterData.sincerely, { x: margin, y: yPosition, font: boldFont, size: 12 });
 
-    // 6. Approved Roll Numbers (now after "Sincerely")
-    yPosition -= 40;
-    page.drawText('The following students are permitted:', { x: margin, y: yPosition, font: boldFont, size: 12 });
-    yPosition -= 20;
+    // Calculate the middle point for two-column layout
+    const middleX = width / 2;
+
+    // 6. Approved Roll Numbers (RIGHT SIDE - moved to right column)
+    let rollNoYPosition = 280; // Starting position for roll numbers on the right
+    page.drawText('The following students are permitted:', { x: middleX, y: rollNoYPosition, font: boldFont, size: 12 });
+    rollNoYPosition -= 20;
     Object.keys(approvedRollNos).forEach(dept => {
         if (approvedRollNos[dept].length > 0) {
-            page.drawText(`${dept.toUpperCase()}:`, { x: margin + 20, y: yPosition, font: boldFont, size: 10 });
-            yPosition -= 15;
+            page.drawText(`${dept.toUpperCase()}:`, { x: middleX + 20, y: rollNoYPosition, font: boldFont, size: 10 });
+            rollNoYPosition -= 15;
             // Use the wrapping function for roll numbers too, in case the list is very long
-            const rollNoLines = wrapText(approvedRollNos[dept].join(', '), font, 10, width - (margin * 2) - 40);
+            const rollNoLines = wrapText(approvedRollNos[dept].join(', '), font, 10, (width/2) - margin - 40);
             rollNoLines.forEach(line => {
-                page.drawText(line, { x: margin + 40, y: yPosition, font, size: 10, lineHeight: 14 });
-                yPosition -= 14;
+                page.drawText(line, { x: middleX + 40, y: rollNoYPosition, font, size: 10, lineHeight: 14 });
+                rollNoYPosition -= 14;
             });
-            yPosition -= 6; // Extra space between departments
+            rollNoYPosition -= 6; // Extra space between departments
         }
     });
 
-    // 7. Approval Status
-    yPosition = 120;
-    page.drawText('Approval Status:', { x: margin, y: yPosition, font: boldFont, size: 12 });
-    yPosition -= 20;
+    // 7. Approval Status (LEFT SIDE - moved to left column)
+    let approvalYPosition = 280; // Starting position for approvals on the left
+    page.drawText('Approval Status:', { x: margin, y: approvalYPosition, font: boldFont, size: 12 });
+    approvalYPosition -= 20;
     // Enforce a specific display order for approvals
     const approvalOrder = ['director', 'dsaa', 'tpo', 'cseHod', 'csmHod', 'csdHod', 'eceHod', 'frshHod'];
     approvalOrder.forEach(officialKey => {
         if (letterData.approvals[officialKey]) {
             const status = letterData.approvals[officialKey];
             const officialName = officialKey.replace('Hod', ' HOD').toUpperCase(); // Make it look nicer
-            page.drawText(`${officialName}: ${status.toUpperCase()}`, { x: margin + 20, y: yPosition, font, size: 10, color: status === 'approved' ? rgb(0, 0.5, 0) : rgb(0.5, 0, 0) });
-            yPosition -= 15;
+            page.drawText(`${officialName}: ${status.toUpperCase()}`, { 
+                x: margin + 20, 
+                y: approvalYPosition, 
+                font, 
+                size: 10, 
+                color: status === 'approved' ? rgb(0, 0.5, 0) : rgb(0.5, 0, 0) 
+            });
+            approvalYPosition -= 15;
         }
     });
 
@@ -172,6 +181,13 @@ export async function createSecuredPdf(letterData: any, approvedRollNos: any, ve
     pdfDoc.setKeywords(['CMRIT', 'Club', 'Permission', 'Letter']);
     pdfDoc.setCreationDate(new Date());
     pdfDoc.setModificationDate(new Date());
+
+    // Add security restrictions - Only allow printing
+    // Note: pdf-lib doesn't have built-in encryption/restriction methods
+    // We'll need to add this after the PDF is created using a different approach
+    
+    // For now, let's add a custom property to track that this PDF should be secured
+    // This will be handled in the API endpoint
 
     // Save the document to get the bytes for hashing
     const pdfBytes = await pdfDoc.save();
