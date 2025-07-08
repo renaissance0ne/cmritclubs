@@ -161,14 +161,30 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ view }) =>
 
     return (
         <div className="min-h-screen flex text-black">
-            <Sidebar setFilter={setFilter} signOut={signOut} />
+            <Sidebar signOut={signOut} />
             <main className="flex-1 p-8 bg-gray-100">
                 <div className="flex justify-between items-center mb-8">
-                    <h1 className="text-3xl font-bold capitalize text-black">{filter} {view}</h1>
+                    <h1 className="text-3xl font-bold capitalize text-black">{view === 'applications' ? 'Club Applications' : 'Permission Letters'}</h1>
                     <div className="text-sm text-black">
-                        Role: {user?.officialRole?.replace('_', ' ').toUpperCase()}
+                        Role: {user?.officialRole?.replace(/_/g, ' ').toUpperCase()}
                     </div>
                 </div>
+
+                {view === 'applications' && (
+                    <div className="mb-6 border-b border-gray-200">
+                        <div className="flex space-x-4">
+                            <button onClick={() => setFilter('pending')} className={`px-3 py-2 text-sm font-medium ${filter === 'pending' ? 'border-b-2 border-blue-500 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                                Pending
+                            </button>
+                            <button onClick={() => setFilter('approved')} className={`px-3 py-2 text-sm font-medium ${filter === 'approved' ? 'border-b-2 border-green-500 text-green-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                                Approved
+                            </button>
+                            <button onClick={() => setFilter('rejected')} className={`px-3 py-2 text-sm font-medium ${filter === 'rejected' ? 'border-b-2 border-red-500 text-red-600' : 'text-gray-500 hover:text-gray-700'}`}>
+                                Rejected
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {view === 'applications' ? (
                     loading ? (

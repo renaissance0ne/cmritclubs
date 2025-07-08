@@ -3,11 +3,10 @@
 import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
-    setFilter: (filter: 'pending' | 'approved' | 'rejected') => void;
     signOut: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ setFilter, signOut }) => {
+export const Sidebar: React.FC<SidebarProps> = ({ signOut }) => {
     const { user } = useAuth();
 
     // Dynamically generate the base path for links based on the user's role
@@ -49,30 +48,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ setFilter, signOut }) => {
                         >
                             Permission Letters
                         </a>
-                    </li>
-                    <li>
-                        <button
-                            onClick={() => setFilter('pending')}
-                            className="w-full text-left px-6 py-3 hover:bg-gray-100 transition-colors text-black"
-                        >
-                            Pending
-                        </button>
-                    </li>
-                    <li>
-                        <button
-                            onClick={() => setFilter('approved')}
-                            className="w-full text-left px-6 py-3 hover:bg-gray-100 transition-colors text-black"
-                        >
-                            Approved
-                        </button>
-                    </li>
-                    <li>
-                        <button
-                            onClick={() => setFilter('rejected')}
-                            className="w-full text-left px-6 py-3 hover:bg-gray-100 transition-colors text-black"
-                        >
-                            Rejected
-                        </button>
                     </li>
                 </ul>
             </nav>

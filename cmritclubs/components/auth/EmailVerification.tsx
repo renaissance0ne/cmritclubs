@@ -5,12 +5,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 
 export const EmailVerification: React.FC = () => {
-    const { firebaseUser, user, sendEmailVerification, signOut } = useAuth();
+    const { firebaseUser, user, sendEmailVerification, signOut, loading: authLoading } = useAuth();
     const router = useRouter();
     const [emailSent, setEmailSent] = useState(false);
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
+        // If user signs out, firebaseUser becomes null, so redirect to signin
+        if (!authLoading && !firebaseUser) {
+            router.push('/signin');
+            return;
+        }
+
         if (firebaseUser?.emailVerified) {
             // Once email is verified, redirect user to the appropriate page
             if (user?.status === 'pending') {
@@ -19,7 +25,7 @@ export const EmailVerification: React.FC = () => {
                 router.push('/dashboard');
             }
         }
-    }, [firebaseUser, user, router]);
+    }, [firebaseUser, user, router, authLoading]);
 
     const handleResendEmail = async () => {
         setLoading(true);
