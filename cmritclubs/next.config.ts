@@ -1,9 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['qpdf']
-  },
+  // Moved from experimental.serverComponentsExternalPackages
+  serverExternalPackages: ['qpdf'],
+  
   // Include the qpdf binaries in the deployment
   webpack: (config, { isServer }) => {
     if (isServer) {
@@ -15,9 +15,12 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  
   // Configure body size limit for server actions
-  serverActions: {
-    bodySizeLimit: '10mb'
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '10mb'
+    }
   },
 
   // ✅ Disable ESLint during build
@@ -25,5 +28,3 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   }
 };
-
-export default nextConfig;
