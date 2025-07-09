@@ -1,7 +1,9 @@
 {
   "functions": {
     "app/api/generate-pdf/route.ts": {
-      "includeFiles": "qpdf/**"
+      "includeFiles": "qpdf/**",
+      "memory": 1024,
+      "maxDuration": 30
     }
   }
 }
