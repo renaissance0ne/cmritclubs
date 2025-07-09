@@ -52,6 +52,8 @@ export async function POST(req: NextRequest) {
     const tempDirectory = os.tmpdir(); // <--- 2. GET THE OS-SPECIFIC TEMP DIRECTORY
     const tempInputPath = path.join(tempDirectory, `unsecured_${tempId}.pdf`);
     const tempOutputPath = path.join(tempDirectory, `secured_${tempId}.pdf`);
+    const qpdfPath = path.resolve('./qpdf/bin/qpdf');
+    const libPath = path.resolve('./qpdf/lib');
 
     try {
         // Step 1 & 2: Authenticate & Authorize User
@@ -105,16 +107,21 @@ export async function POST(req: NextRequest) {
         await fs.writeFile(tempInputPath, flattenedPdfBytes);
 
         // 7b. Execute qpdf
-        await execFileAsync('qpdf', [
-  tempInputPath,
-  tempOutputPath,
-  '--encrypt', '', ownerPassword, '256',
-  '--print=full',
-  '--modify=none',
-  '--extract=n',
-  '--cleartext-metadata',
-  '--'
-]);
+        await execFileAsync(qpdfPath, [
+            tempInputPath,
+            tempOutputPath,
+            '--encrypt', '', ownerPassword, '256',
+            '--print=full',
+            '--modify=none',
+            '--extract=n',
+            '--cleartext-metadata',
+            '--'
+        ], {
+            env: {
+                    ...process.env,
+                    'LD_LIBRARY_PATH': libPath
+                }
+        });
 
 
 
