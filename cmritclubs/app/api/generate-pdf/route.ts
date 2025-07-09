@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Step 4 & 5: Prepare data for PDF generation
-        const verificationUrl = `https://owj6bumfwr.ufs.sh/f/${letterId}`;
+        const verificationUrl = `https://cmritclubs.vercel.app/verify-letter/${letterId}`;
         const approvedRollNos: { [key: string]: string[] } = {};
         if (letterData.rollNoApprovals) {
             for (const dept in letterData.rollNoApprovals) {

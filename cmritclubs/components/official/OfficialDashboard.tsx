@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { PermissionLettersDashboard } from './PermissionLettersDashboard';
 import { Sidebar } from './Sidebar';
 
@@ -82,9 +82,16 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ view }) =>
                 );
                 const querySnapshot = await getDocs(q);
 
-                const fetchedApplications = querySnapshot.docs
+                let fetchedApplications = querySnapshot.docs
                     .map(doc => ({ uid: doc.id, ...doc.data() } as UserApplication))
                     .filter(app => app.clubName && app.displayName && app.rollNo);
+
+                // Sort applications on the client-side by creation date
+                fetchedApplications.sort((a, b) => {
+                    const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : (a.createdAt as any)?.seconds * 1000 || 0;
+                    const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : (b.createdAt as any)?.seconds * 1000 || 0;
+                    return dateB - dateA; // Descending order
+                });
 
                 setApplications(fetchedApplications);
             } catch (error) {
@@ -217,6 +224,7 @@ export const OfficialDashboard: React.FC<OfficialDashboardProps> = ({ view }) =>
                                         {app.expectedGraduationYear && (
                                             <p><strong>Graduation:</strong> {app.expectedGraduationMonth} {app.expectedGraduationYear}</p>
                                         )}
+                                        <p><strong>Submitted:</strong> {app.createdAt?.toDate().toLocaleDateString()}</p>
                                     </div>
 
                                     {app.letterOfProof && (

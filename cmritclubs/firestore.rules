@@ -32,26 +32,21 @@ service cloud.firestore {
 
     // Rules for the 'permissionLetters' collection
     match /permissionLetters/{letterId} {
-      // Allow users to create, read, and write their own letters
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.uid;
-      allow read, write: if request.auth != null && request.auth.uid == resource.data.uid;
-      
-      // Allow college officials to read and update all permission letters
-      allow read, update: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'college_official';
-    }
-    
-    // Rules for the 'permissionLetters' collection
-    match /permissionLetters/{letterId} {
+      // Allow anyone to get a document for verification.
+      allow get: if true;
+
       // Allow club leaders to create their own letters
       allow create: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'club_leader';
-      // Allow club leaders to read their own letters
-      allow read: if request.auth != null && request.auth.uid == resource.data.uid;
-      // Allow college officials to read and update all letters
-      allow read, update: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'college_official';
-       // Allow officials to update letters, and allow server-side updates for PDF generation
+      
+      // Allow read access to the owner or any college official.
+      allow read: if request.auth != null && (request.auth.uid == resource.data.uid || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'college_official');
+      
+      // Allow write access only to the owner (for deletion)
+      allow write: if request.auth != null && request.auth.uid == resource.data.uid;
+      
+      // Allow updates from officials or a backend process
       allow update: if (request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'college_official') ||
-                       (request.auth == null && request.resource.data.pdfHash != null); // Allow backend process to update with hash
+                       (request.auth == null && request.resource.data.pdfHash != null);
     }
   }
 }

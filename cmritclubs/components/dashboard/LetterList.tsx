@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, orderBy, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, getDocs, deleteDoc, doc, Timestamp } from 'firebase/firestore';
 import { PermissionLetter } from '@/types/letters';
 
 interface LettersListProps {
@@ -33,14 +33,21 @@ export const LettersList: React.FC<LettersListProps> = ({ filter }) => {
             const q = query(
                 collection(db, 'permissionLetters'),
                 where('uid', '==', user.uid),
-                where('status', '==', filter),
-                orderBy('createdAt', 'desc')
+                where('status', '==', filter)
             );
             const querySnapshot = await getDocs(q);
-            const fetchedLetters = querySnapshot.docs.map(doc => ({
+            let fetchedLetters = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as PermissionLetter));
+
+            // Sort letters on the client-side by creation date
+            fetchedLetters.sort((a, b) => {
+                const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+                const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
+                return dateB - dateA; // Descending order
+            });
+
             setLetters(fetchedLetters);
         } catch (error) {
             console.error('Error fetching letters:', error);

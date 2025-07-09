@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp, getDoc, Timestamp } from 'firebase/firestore';
 import { PermissionLetter } from '@/types/letters';
 import { ApprovalStatus } from '@/types/auth';
 
@@ -48,16 +48,25 @@ export const PermissionLettersDashboard: React.FC = () => {
         };
         setLoading(true);
         try {
+            // Removed orderBy from the query to prevent index error
             const q = query(
                 collection(db, 'permissionLetters'),
                 where(`approvals.${myRole}`, '==', filter)
             );
             
             const querySnapshot = await getDocs(q);
-            const fetchedLetters = querySnapshot.docs.map(doc => ({
+            let fetchedLetters = querySnapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
             } as PermissionLetter));
+
+            // Sort the letters on the client-side by creation date
+            fetchedLetters.sort((a, b) => {
+                const dateA = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+                const dateB = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
+                return dateB - dateA; // Descending order
+            });
+
             setLetters(fetchedLetters);
         } catch (error) {
             console.error("Error fetching permission letters: ", error);
