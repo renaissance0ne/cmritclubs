@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  typescript: {
+    ignoreBuildErrors: true, // ✅ disables TypeScript errors during build
+  },
+  
   // Moved from experimental.serverComponentsExternalPackages
   serverExternalPackages: ['qpdf'],
   
@@ -22,8 +26,4 @@ const nextConfig: NextConfig = {
       bodySizeLimit: '10mb'
     }
   },
-
-  typescript: {
-    ignoreBuildErrors: true, // ✅ disables TypeScript errors during build
-  }
 };
