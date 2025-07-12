@@ -1,6 +1,6 @@
 # 🎓 CMRIT Clubs
 
-![CMR Logo](https://github.com/renaissance0ne/cmritclubs/blob/main/cmritclubs/public/logo.png)
+![CMR Logo](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/refs/heads/main/cmritclubs/public/logo_small.png)
 
 # 📑 College Clubs Permission Platform 
 
