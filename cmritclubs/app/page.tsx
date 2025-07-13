@@ -43,14 +43,24 @@ export default function HomePage() {
   }
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 relative">
         {/* GitHub link in top right corner */}
-        <div className="absolute top-4 right-4 z-10">
+        <div className="fixed top-4 right-4 z-50">
           <a
             href="https://github.com/renaissance0ne/cmritclubs"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg transition-colors shadow-sm"
+            className="inline-flex items-center px-4 py-2 text-white font-medium rounded-lg transition-colors shadow-lg"
+            style={{
+              backgroundColor: '#1f2937',
+              border: '1px solid #374151'
+            }}
+            onMouseEnter={(e) => {
+              (e.target as HTMLElement).style.backgroundColor = '#111827';
+            }}
+            onMouseLeave={(e) => {
+              (e.target as HTMLElement).style.backgroundColor = '#1f2937';
+            }}
           >
             <svg
               className="w-5 h-5 mr-2"
@@ -64,7 +74,7 @@ export default function HomePage() {
           </a>
         </div>
 
-        <div className="max-w-4xl mx-auto px-4 py-16">
+        <div className="max-w-4xl mx-auto px-4 py-16 relative">
           <div className="text-center">
             <h1 className="text-4xl font-bold text-gray-900 mb-4">
               CMRIT Clubs Portal
