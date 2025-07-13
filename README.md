@@ -44,26 +44,27 @@ This platform is designed for college clubs to request and receive permission le
 
 Here are some screenshots of the platform in action:
 
-| Landing Page | Sign In |
+| Club Leader's Dashboard | Drafting a letter |
 | :---: | :---: |
 | ![Screenshot 1](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/1.png) | ![Screenshot 2](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/2.png) |
 
-| Club Leader Application | Application Status |
+| Letter Status | Approved Letters |
 | :---: | :---: |
 | ![Screenshot 3](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/3.png) | ![Screenshot 4](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/4.png) |
 
-| Club Leader Dashboard | Create New Letter |
+| Official's Application Dashboard (Approved)| Official's Application Dashboard (Rejected) |
 | :---: | :---: |
 | ![Screenshot 5](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/5.png) | ![Screenshot 6](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/6.png) |
 
-| Official's Dashboard | Letter Approval View |
+| Official's Permission Letters Dashboard | Letter Approval View |
 | :---: | :---: |
 | ![Screenshot 7](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/7.png) | ![Screenshot 8](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/8.png) |
 
-| Generated PDF |
+| Official's Approved Letters |
 | :---: |
 | ![Screenshot 9](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/9.png) |
 
+[View a sample Generated PDF with Security Features!](https://owj6bumfwr.ufs.sh/f/k9dv9Wf5NdQHfHNldkwoFpZIRiYMgdN8CrqEOy0Q67TzVabn)
 
 ## 🏗️ Platform Architecture
 
