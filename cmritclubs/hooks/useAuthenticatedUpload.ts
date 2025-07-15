@@ -38,7 +38,7 @@ export const useAuthenticatedUpload = (
 
             // Transform the result to match our UploadResult interface
             const uploadResults: UploadResult[] = result.map((file: any) => ({
-                url: file.url,
+                url: file.ufsUrl,
                 name: file.name,
                 size: file.size,
             }));
