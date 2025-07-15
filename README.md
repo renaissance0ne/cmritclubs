@@ -1,8 +1,8 @@
 # 🎓 CMRIT Clubs
 
-![CMR Logo](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/refs/heads/main/cmritclubs/public/logo_small.png)
+![CMR Logo](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/logo_small.png)
 
-# 📑 College Clubs Permission Platform 
+# 📑 College Clubs Permission Platform 
 
 A modern web platform to streamline the process of club permission letter approvals in colleges, eliminating the hassle of manual paperwork and in-person faculty visits.
 
@@ -12,11 +12,12 @@ Live site: [cmritclubs.vercel.app](https://cmritclubs.vercel.app/)
 
 - [🧾 Overview](#-overview)
 - [✨ Key Features](#-key-features)
+- [🖼️ Screenshots](#-screenshots)
 - [🏗️ Platform Architecture](#-platform-architecture)
 - [👥 User Roles & Workflows](#-user-roles--workflows)
-  - [🧑‍💼 Club Leader Onboarding](#-club-leader-onboarding)
-  - [🏛️ College Official Onboarding](#-college-official-onboarding)
-  - [✉️ Letter of Permission Process](#-letter-of-permission-process)
+  - [🧑‍💼 Club Leader Onboarding](#-club-leader-onboarding)
+  - [🏛️ College Official Onboarding](#-college-official-onboarding)
+  - [✉️ Letter of Permission Process](#-letter-of-permission-process)
 - [🔒 Security Features](#-security-features)
 - [🛠️ Tech Stack](#-tech-stack)
 - [🚀 Getting Started](#-getting-started)
@@ -39,35 +40,61 @@ This platform is designed for college clubs to request and receive permission le
 - **PDF Generation:** Approved letters are generated as secure, tamper-resistant PDFs.
 - **Centralized Management:** All data and user management in one place.
 
+## 🖼️ Screenshots
+
+Here are some screenshots of the platform in action:
+
+| Club Leader's Dashboard | Drafting a letter |
+| :---: | :---: |
+| ![Screenshot 1](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/1.png) | ![Screenshot 2](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/2.png) |
+
+| Letter Status | Approved Letters |
+| :---: | :---: |
+| ![Screenshot 3](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/3.png) | ![Screenshot 4](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/4.png) |
+
+| Official's Application Dashboard (Approved)| Official's Application Dashboard (Rejected) |
+| :---: | :---: |
+| ![Screenshot 5](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/5.png) | ![Screenshot 6](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/6.png) |
+
+| Official's Permission Letters Dashboard | Letter Approval View |
+| :---: | :---: |
+| ![Screenshot 7](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/7.png) | ![Screenshot 8](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/8.png) |
+
+| Official's Approved Letters |
+| :---: |
+| ![Screenshot 9](https://raw.githubusercontent.com/renaissance0ne/cmritclubs/main/cmritclubs/public/Screenshots/9.png) |
+
+[View a sample Generated PDF with Security Features!](https://owj6bumfwr.ufs.sh/f/k9dv9Wf5NdQHfHNldkwoFpZIRiYMgdN8CrqEOy0Q67TzVabn)
+
 ## 🏗️ Platform Architecture
 
-| Layer            | Technology                       | Purpose                                           |
+| Layer            | Technology                       | Purpose                                           |
 |------------------|----------------------------------|---------------------------------------------------|
-| Frontend         | Next.js (React)                  | Fast, modern, server-rendered UI                  |
-| Backend          | Next.js API Routes               | Serverless logic, API endpoints                   |
-| Authentication   | Firebase Authentication          | Secure login, registration, email verification    |
-| Database         | Firebase DB                      | Application data (users, clubs, letters, etc.)    |
-| File Storage     | Uploadthing                      | Store uploaded files (proof documents)            |
+| Frontend         | Next.js (React)                  | Fast, modern, server-rendered UI                  |
+| Backend          | Next.js API Routes               | Serverless logic, API endpoints                   |
+| Authentication   | Firebase Authentication          | Secure login, registration, email verification    |
+| Database         | Firebase DB                      | Application data (users, clubs, letters, etc.)    |
+| File Storage     | Uploadthing                      | Store uploaded files (proof documents)            |
 
 ## 👥 User Roles & Workflows
 
 ### 🧑‍💼 Club Leader Onboarding
 
 1. **Sign Up:**
-   - Register using official college email via Firebase Authentication.
-   - Email verification is required.
+   - Register using official college email via Firebase Authentication.
+   - Email verification is required.
 
 2. **Application Submission:**
-   - Complete an application form with personal and club details.
-   - Upload a "Letter of Proof" (e.g., club authorization letter or related document).
+   - Complete an application form with personal and club details.
+   - Upload a "Letter of Proof" (e.g., club authorization letter or related document).
 
 3. **Verification:**
-   - Application is reviewed by college officials.
-   - Status is updated to `approved` or `rejected` in the system.
-   - Club leaders receive notification emails.
+   - Application is reviewed by college officials.
+   - Status is updated to `approved` or `rejected` in the system.
+   - Club leaders receive notification emails.
 
 4. **Platform Access:**
-   - Approved club leaders gain full access to draft and submit permission letters.
+   - Approved club leaders gain full access to draft and submit permission letters.
 
 ### 🏛️ College Official Onboarding
 
@@ -75,8 +102,8 @@ This platform is designed for college clubs to request and receive permission le
 - Officials can log in using their college email.
 - No self-registration required for officials.
 - Officials access a dashboard to:
-  - Review club leader applications.
-  - Approve or reject permission letter requests.
+  - Review club leader applications.
+  - Approve or reject permission letter requests.
 
 ### ✉️ Letter of Permission Process
 
@@ -93,11 +120,11 @@ This platform is designed for college clubs to request and receive permission le
 - **Role-Based Access:** Only authorized users can access sensitive actions.
 - **Secure File Storage:** Proof documents are stored in uploadthing.
 - **PDF Security:** Generated permission letters include:
-  - Flattened content (non-editable)
-  - Watermark
-  - Unique hash
-  - QR code for authenticity verification
-  - Strict read-only permissions
+  - Flattened content (non-editable)
+  - Watermark
+  - Unique hash
+  - QR code for authenticity verification
+  - Strict read-only permissions
 
 ## 🛠️ Tech Stack
 
@@ -113,20 +140,20 @@ This platform is designed for college clubs to request and receive permission le
 
 1. **Clone the Repository**
 2. **Set Up Environment Variables**
-   - Firebase project credentials
-   - Firebase URI
-   - Uploadthing token
+   - Firebase project credentials
+   - Firebase URI
+   - Uploadthing token
 3. **Install Dependencies**
-   ```bash
-   npm install
-   ```
+   ```bash
+   npm install
+   ```
 4. **Run the Development Server**
-   ```bash
-   npm run dev
-   ```
+   ```bash
+   npm run dev
+   ```
 5. **Access the Platform**
-   - Club leaders: Register and apply for verification.
-   - College officials: Log in with provided credentials.
+   - Club leaders: Register and apply for verification.
+   - College officials: Log in with provided credentials.
 
 ## 💡 Why This Approach?
 
@@ -142,7 +169,7 @@ This platform is designed for college clubs to request and receive permission le
 - Advanced notification preferences
 - Customizable approval workflows
 
-📝 Contributing
+## 📝 Contributing
 
 Fork the repository
 Create a feature branch (git checkout -b feature/amazing-feature)
@@ -152,10 +179,10 @@ Open a Pull Request
 
 ---
 
-**Version**: 1.0.0  
-**Last Updated**: July 2025  
+**Version**: 1.0.0  
+**Last Updated**: July 2024  
 **Maintained by**: Vallabh Dasari
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details
