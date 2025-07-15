@@ -5,11 +5,20 @@ import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic'; // <-- IMPORT DYNAMIC
+
+// --- DYNAMICALLY IMPORT THE EDITOR TO PREVENT SSR ---
+const RichTextEditor = dynamic(() => import('../rtf'), {
+    ssr: false,
+    loading: () => <div className="w-full h-[300px] bg-gray-100 rounded-md animate-pulse"></div>, // Optional loading state
+});
+// --- END OF DYNAMIC IMPORT ---
 
 export const PermissionLetterForm: React.FC = () => {
     const { user } = useAuth();
     const router = useRouter();
     const [subject, setSubject] = useState('');
+    // The 'body' state will now hold HTML content from the editor
     const [body, setBody] = useState('');
     const [sincerely, setSincerely] = useState('');
     const [rollNos, setRollNos] = useState({
@@ -42,7 +51,7 @@ export const PermissionLetterForm: React.FC = () => {
                 clubName: user.clubName,
                 date: serverTimestamp(),
                 subject,
-                body,
+                body, // The HTML content is saved to Firestore
                 sincerely,
                 rollNos,
                 status: 'pending',
@@ -81,13 +90,13 @@ export const PermissionLetterForm: React.FC = () => {
                 <h2 className="text-2xl font-semibold text-black">{user?.clubName}</h2>
             </div>
             <div className="text-sm text-black">
-                <p className="text-black">To,</p>
-                <p className="text-black">The Director,</p>
-                <p className="text-black">CMR Institute of Technology</p>
-                <p className="text-black">Medchal</p>
+                <p>To,</p>
+                <p>The Director,</p>
+                <p>CMR Institute of Technology</p>
+                <p>Medchal</p>
             </div>
             <div className="text-sm text-black">
-                <p className="text-black">Date: {new Date().toLocaleDateString()}</p>
+                <p>Date: {new Date().toLocaleDateString()}</p>
             </div>
             <div>
                 <label htmlFor="subject" className="block text-sm font-medium text-black">Subject</label>
@@ -101,14 +110,10 @@ export const PermissionLetterForm: React.FC = () => {
                 />
             </div>
             <div>
-                <label htmlFor="body" className="block text-sm font-medium text-black">Respected Sir,</label>
-                <textarea
-                    id="body"
-                    value={body}
-                    onChange={(e) => setBody(e.target.value)}
-                    required
-                    rows={10}
-                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-black"
+                <label htmlFor="body" className="block text-sm font-medium text-black mb-1">Respected Sir,</label>
+                <RichTextEditor
+                    content={body}
+                    onChange={setBody}
                 />
             </div>
             <div>

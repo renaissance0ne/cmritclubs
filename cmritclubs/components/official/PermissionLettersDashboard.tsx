@@ -78,7 +78,7 @@ export const PermissionLettersDashboard: React.FC = () => {
     useEffect(() => {
         fetchLetters();
     }, [fetchLetters]);
-    
+     
     useEffect(() => {
         setSelectedLetter(null);
         setApprovalError(''); // Reset error when filter changes
@@ -214,7 +214,13 @@ export const PermissionLettersDashboard: React.FC = () => {
                     </div>
                     <p className="text-sm text-black">Submitted: {letter.createdAt?.toDate().toLocaleDateString()}</p>
                     <p className="mt-4 text-black"><strong>Subject:</strong> {letter.subject}</p>
-                    <p className="mt-2 whitespace-pre-wrap text-black">{letter.body}</p>
+                    
+                    {/* FIX: Use dangerouslySetInnerHTML to render the HTML from the rich text editor */}
+                    <div 
+                        className="mt-4 prose prose-sm max-w-none text-black" 
+                        dangerouslySetInnerHTML={{ __html: letter.body }} 
+                    />
+
                     <p className="mt-4 text-black"><strong>Sincerely,</strong><br/>{letter.sincerely}</p>
 
                     <div className="mt-6">
