@@ -81,29 +81,15 @@ export default function MenuBar({ editor }: { editor: Editor | null }) {
         return null;
     }
 
-    /**
-     * Applies heading styles. If text is selected, it wraps only the
-     * selected text in a heading tag, splitting the paragraph.
-     * If no text is selected, it toggles the heading for the entire block.
-     * @param level The heading level (1, 2, or 3).
-     */
     const applyHeading = (level: 1 | 2 | 3) => {
         if (!editor) return;
-
-        // If no text is selected, toggle the heading for the entire current block.
         if (editor.state.selection.empty) {
             editor.chain().focus().toggleHeading({ level }).run();
             return;
         }
-
-        // If text is selected, create a new heading block from that selection.
         const { from, to } = editor.state.selection;
         const selectedText = editor.state.doc.textBetween(from, to);
-
         if (selectedText.trim() === "") return;
-
-        // The `insertContent` command replaces the current selection.
-        // It parses the HTML and correctly splits the parent block node if needed.
         editor.chain().focus().insertContent(`<h${level}>${selectedText}</h${level}>`).run();
     };
 
@@ -113,7 +99,6 @@ export default function MenuBar({ editor }: { editor: Editor | null }) {
         { type: "toggle", icon: <Italic className="h-4 w-4" />, onClick: () => editor.chain().focus().toggleItalic().run(), pressed: editor.isActive("italic"), title: "Italic" },
         { type: "toggle", icon: <Strikethrough className="h-4 w-4" />, onClick: () => editor.chain().focus().toggleStrike().run(), pressed: editor.isActive("strike"), title: "Strikethrough" },
         { type: "button", icon: <Link className="h-4 w-4" />, onClick: setLink, pressed: editor.isActive("link"), title: "Set Link" },
-        // FIX: Use the custom applyHeading function to handle selected text correctly.
         { type: "toggle", icon: <Heading1 className="h-4 w-4" />, onClick: () => applyHeading(1), pressed: editor.isActive("heading", { level: 1 }), title: "Heading 1" },
         { type: "toggle", icon: <Heading2 className="h-4 w-4" />, onClick: () => applyHeading(2), pressed: editor.isActive("heading", { level: 2 }), title: "Heading 2" },
         { type: "toggle", icon: <Heading3 className="h-4 w-4" />, onClick: () => applyHeading(3), pressed: editor.isActive("heading", { level: 3 }), title: "Heading 3" },
