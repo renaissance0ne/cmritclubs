@@ -99,6 +99,38 @@ export default function HomePage() {
             </div>
           </div>
 
+          {/* Video Demo Section */}
+          <div className="mt-16 bg-white rounded-lg shadow-sm p-8">
+            <div className="text-center mb-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                Platform Demo
+              </h2>
+              <p className="text-gray-600">
+                Watch how the CMRIT Clubs Portal works in action
+              </p>
+            </div>
+            
+            <div className="relative max-w-3xl mx-auto">
+              <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden shadow-lg">
+                <iframe
+                  className="w-full h-full"
+                  src="https://drive.google.com/file/d/154ew3Bs9cU_Ksx7lH2Z45Zvon-Ynh-6L/preview"
+                  title="CMRIT Clubs Portal Demo"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+              
+              {/* Video Description */}
+              <div className="mt-4 text-center">
+                <p className="text-sm text-gray-500">
+                  This demo shows the complete workflow from student registration to permission letter approval
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-lg shadow-sm">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
