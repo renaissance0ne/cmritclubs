@@ -179,7 +179,7 @@ Open a Pull Request
 
 ---
 
-**Version**: 1.0.0  
+**Version**: 1.1.0  
 **Last Updated**: July 2024  
 **Maintained by**: Vallabh Dasari
 
